@@ -13,6 +13,8 @@ class APieceBase : public AActor
 {
     GENERATED_BODY()
 
+    APieceBase();
+
 public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Config")
