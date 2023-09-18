@@ -204,7 +204,7 @@ class Board {
         }
         int move = fn_move(key);
         add_if_valid(l, move, cell, false);
-        if (is_initial_pawn_cell(key, cell)) {
+        if (!board_map[move]->has_piece() && is_initial_pawn_cell(key, cell)) {
             add_if_valid(l, fn_move(move), cell, false);
         }
         int take = fn_take_1(key);
