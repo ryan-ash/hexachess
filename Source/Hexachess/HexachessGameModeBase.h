@@ -6,6 +6,9 @@
 #include "GameFramework/GameModeBase.h"
 #include "HexachessGameModeBase.generated.h"
 
+
+class Board;
+
 /**
  * 
  */
@@ -44,6 +47,10 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	virtual void CreateLogicalBoard();
+
+private:
+
+	Board* ActiveBoard = nullptr;
 };
 
 

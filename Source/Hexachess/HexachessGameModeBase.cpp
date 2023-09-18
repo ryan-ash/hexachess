@@ -1,5 +1,7 @@
 #include "HexachessGameModeBase.h"
 
+#include "Chess/ChessEngine.h"
+
 
 AHexachessGameModeBase::AHexachessGameModeBase() : Super()
 {
@@ -21,5 +23,14 @@ void AHexachessGameModeBase::StartGame()
 
 void AHexachessGameModeBase::CreateLogicalBoard()
 {
-    // logical board creation code can be placed here...
+    ActiveBoard = new Board();
+
+    //     print_moves(b, 0, 0, Cell::PieceType::knight, Cell::PieceColor::white, "Knight");
+    //     print_moves(b, 1, 0, Cell::PieceType::pawn, Cell::PieceColor::white, "Pawn");
+
+    // void print_moves(Board* b, int x, int y, Cell::PieceType pt, Cell::PieceColor pc, string piece_name) {
+
+        // b->set_piece(p, pt, pc);
+        // list<Position> lp = b->get_valid_moves(p);
+
 }
