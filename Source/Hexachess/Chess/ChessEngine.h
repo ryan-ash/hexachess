@@ -1,6 +1,7 @@
 #include <map>
 #include <list>
 #include <algorithm>
+#include <vector>
 #include <iostream>
 
 using namespace std;
@@ -161,8 +162,8 @@ class Board {
     static const int max = 10;
     static const int step_x = 1 << 8;
     map<int, Cell*> board_map;
-    const int white_pawn_cell_keys[9] = {256, 513, 770, 1027, 1284, 1539, 1794, 2049, 2304};
-    const int black_pawn_cell_keys[9] = {262, 518, 774, 1030, 1286, 1542, 1798, 2054, 2310};
+    const vector<int> white_pawn_cell_keys = {256, 513, 770, 1027, 1284, 1541, 1796, 2051, 2306};
+    const vector<int> black_pawn_cell_keys = {262, 518, 774, 1030, 1286, 1542, 1798, 2054, 2310};
 
     inline int to_position_key(int x, int y) {
         return (x << 8) + y;
@@ -219,22 +220,20 @@ class Board {
     }
 
     bool is_initial_pawn_cell(const int key, Cell* cell) {
-        bool result;
+        const vector<int>* cell_keys;
         switch (cell->get_piece_color()) {
-            case Cell::PieceColor::white: {
-                auto arr_end = end(white_pawn_cell_keys);
-                auto k = find(begin(white_pawn_cell_keys), arr_end, key);
-                result = k != arr_end;
+            case Cell::PieceColor::white:
+                cell_keys = &white_pawn_cell_keys;
                 break;
-            }
-            case Cell::PieceColor::black: {
-                auto arr_end = end(black_pawn_cell_keys);
-                auto k = find(begin(black_pawn_cell_keys), arr_end, key);
-                result = k != arr_end;
+            case Cell::PieceColor::black:
+                cell_keys = &black_pawn_cell_keys;
                 break;
-            }
+            default:
+                cell_keys = {};
         }
-        return result;
+        auto arr_end = end(*cell_keys);
+        auto k = find(begin(*cell_keys), arr_end, key);
+        return k != arr_end;
     }
 
     void add_bishop_moves(list<int>& l, int key, Cell* cell) {
