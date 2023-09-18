@@ -6020,6 +6020,18 @@
 		{
 			"Path": "$(ProjectDir)/Binaries/Win64/UnrealEditor.modules",
 			"Type": "RequiredResource"
+		},
+		{
+			"Path": "$(ProjectDir)/Plugins/ElectronicNodes/Binaries/Win64/UnrealEditor-ElectronicNodes.dll",
+			"Type": "DynamicLibrary"
+		},
+		{
+			"Path": "$(ProjectDir)/Plugins/ElectronicNodes/Binaries/Win64/UnrealEditor-ElectronicNodes.pdb",
+			"Type": "SymbolFile"
+		},
+		{
+			"Path": "$(ProjectDir)/Plugins/ElectronicNodes/Binaries/Win64/UnrealEditor.modules",
+			"Type": "RequiredResource"
 		}
 	],
 	"RuntimeDependencies": [
@@ -27209,6 +27221,10 @@
 		},
 		{
 			"Path": "$(ProjectDir)/Hexachess.uproject",
+			"Type": "UFS"
+		},
+		{
+			"Path": "$(ProjectDir)/Plugins/ElectronicNodes/ElectronicNodes.uplugin",
 			"Type": "UFS"
 		}
 	],
