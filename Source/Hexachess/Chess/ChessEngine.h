@@ -144,9 +144,13 @@ class Board {
         return true;
     }
 
-    void set_piece(Position& pos, Cell::PieceType pt, Cell::PieceColor pc) {
+    bool set_piece(Position& pos, Cell::PieceType pt, Cell::PieceColor pc) {
         int key = to_position_key(pos);
+        if (!is_valid_position(key)) {
+            return false;
+        }
         board_map[key]->set_piece(pt, pc);
+        return false;
     }
 
     private:
@@ -157,7 +161,7 @@ class Board {
     static const int max = 10;
     static const int step_x = 1 << 8;
     map<int, Cell*> board_map;
-    const int white_pawn_cell_keys[9] = {256, 513, 770, 1027, 1284, 1541, 1796, 2051, 2306};
+    const int white_pawn_cell_keys[9] = {256, 513, 770, 1027, 1284, 1539, 1794, 2049, 2304};
     const int black_pawn_cell_keys[9] = {262, 518, 774, 1030, 1286, 1542, 1798, 2054, 2310};
 
     inline int to_position_key(int x, int y) {
@@ -224,8 +228,8 @@ class Board {
                 cell_keys = black_pawn_cell_keys;
                 break;
         }
-        auto arr_end = end(white_pawn_cell_keys);
-        const int *k = find(begin(white_pawn_cell_keys), arr_end, key);
+        auto arr_end = end(cell_keys);
+        const int *k = find(begin(cell_keys), arr_end, key);
         return k != arr_end;
     }
 
