@@ -22,6 +22,7 @@ public:
 	AHexachessGameModeBase();
 
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	// session boilerplate for later
 
@@ -29,7 +30,7 @@ public:
 	virtual void StartGame();
 
 	UFUNCTION(BlueprintCallable)
-	virtual void EndGame() {}
+	virtual void EndGame();
 
 	UFUNCTION(BlueprintCallable)
 	virtual void RestartGame() {}

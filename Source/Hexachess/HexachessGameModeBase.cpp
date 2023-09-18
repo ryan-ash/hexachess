@@ -15,10 +15,26 @@ void AHexachessGameModeBase::BeginPlay()
     StartGame();
 }
 
+void AHexachessGameModeBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+    Super::EndPlay(EndPlayReason);
+
+    EndGame();
+}
+
 void AHexachessGameModeBase::StartGame()
 {
     CreatePieces();
     CreateLogicalBoard();
+}
+
+void AHexachessGameModeBase::EndGame()
+{
+    if (ActiveBoard != nullptr)
+    {
+        delete ActiveBoard;
+        ActiveBoard = nullptr;
+    }
 }
 
 void AHexachessGameModeBase::CreateLogicalBoard()
@@ -34,3 +50,8 @@ void AHexachessGameModeBase::CreateLogicalBoard()
         // list<Position> lp = b->get_valid_moves(p);
 
 }
+
+// create methods for:
+// - creating pieces
+// - checking possible moves
+// - moving pieces
