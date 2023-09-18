@@ -219,18 +219,22 @@ class Board {
     }
 
     bool is_initial_pawn_cell(const int key, Cell* cell) {
-        const int* cell_keys;
+        bool result;
         switch (cell->get_piece_color()) {
-            case Cell::PieceColor::white:
-                cell_keys = white_pawn_cell_keys;
+            case Cell::PieceColor::white: {
+                auto arr_end = end(white_pawn_cell_keys);
+                auto k = find(begin(white_pawn_cell_keys), arr_end, key);
+                result = k != arr_end;
                 break;
-            case Cell::PieceColor::black:
-                cell_keys = black_pawn_cell_keys;
+            }
+            case Cell::PieceColor::black: {
+                auto arr_end = end(black_pawn_cell_keys);
+                auto k = find(begin(black_pawn_cell_keys), arr_end, key);
+                result = k != arr_end;
                 break;
+            }
         }
-        auto arr_end = end(cell_keys);
-        const int *k = find(begin(cell_keys), arr_end, key);
-        return k != arr_end;
+        return result;
     }
 
     void add_bishop_moves(list<int>& l, int key, Cell* cell) {
