@@ -48,6 +48,22 @@ class Cell {
         return piece != PieceType::none && piece_color == PieceColor::black;
     }
 
+    bool has_piece_of_same_color(Cell* cell) {
+        PieceColor other_color = cell->get_piece_color();
+        return piece != PieceType::none
+               && piece_color != PieceColor::absent
+               && other_color != PieceColor::absent
+               && piece_color == other_color;
+    }
+
+    bool has_piece_of_opposite_color(Cell* cell) {
+        PieceColor other_color = cell->get_piece_color();
+        return piece != PieceType::none
+               && piece_color != PieceColor::absent
+               && other_color != PieceColor::absent
+               && piece_color != other_color;
+    }
+
     PieceType get_piece_type() {
         return piece;
     }
@@ -120,7 +136,6 @@ class Board {
     bool move_piece(Position& start, Position& goal) {
         int sp = to_position_key(start);
         if (is_valid_position(sp) && is_valid_position(goal)) {
-
             Cell::PieceType pt = board_map[sp]->get_piece_type();
             Cell::PieceColor pc = board_map[sp]->get_piece_color();
             board_map[sp]->remove_piece();
@@ -167,22 +182,35 @@ class Board {
     }
 
     void add_pawn_moves(list<int>& l, int key, Cell* cell) {
-        TMoveFn fn;
+        TMoveFn fn_move, fn_take_1, fn_take_2;
         switch (cell->get_piece_color()) {
             case Cell::PieceColor::white:
-                fn = &Board::move_vertically_up;
+                fn_move = &Board::move_vertically_up;
+                fn_take_1 = &Board::move_horizontally_top_left;
+                fn_take_2 = &Board::move_horizontally_top_right;
                 break;
             case Cell::PieceColor::black:
-                fn = &Board::move_vertically_down;
+                fn_move = &Board::move_vertically_down;
+                fn_take_1 = &Board::move_horizontally_bottom_left;
+                fn_take_2 = &Board::move_horizontally_bottom_right;
                 break;
             default:
-                fn = &Board::ping;
-                break;
+                return;
         }
-        int move = fn(key);
-        add_if_valid(l, move);
+        int move = fn_move(key);
+        add_if_valid(l, move, cell, false);
         if (is_initial_pawn_cell(key, cell)) {
-            add_if_valid(l, fn(move));
+            add_if_valid(l, fn_move(move), cell, false);
+        }
+        int take = fn_take_1(key);
+        add_pawn_take_if_valid(l, take, cell);
+        take = fn_take_2(key);
+        add_pawn_take_if_valid(l, take, cell);
+    }
+
+    void add_pawn_take_if_valid(list<int>& l, int key, Cell* cell) {
+        if (is_valid_position(key) && board_map[key]->has_piece_of_opposite_color(cell)) {
+            l.push_front(key);
         }
     }
 
@@ -207,34 +235,34 @@ class Board {
                          , &move_diagonally_bottom_right
                          , &move_diagonally_bottom_left
                          };
-        add_valid_moves(l, key, fns, 4);
+        add_valid_moves(l, key, fns, 4, cell);
     }
 
     void add_knight_moves(list<int>& l, int key, Cell* cell) {
         int pos;
         pos = move_vertically_up(move_vertically_up(key));
-        add_if_valid(l, move_horizontally_top_right(pos));
-        add_if_valid(l, move_horizontally_top_left(pos));
+        add_if_valid(l, move_horizontally_top_right(pos), cell, true);
+        add_if_valid(l, move_horizontally_top_left(pos), cell, true);
 
         pos = move_vertically_down(move_vertically_down(key));
-        add_if_valid(l, move_horizontally_bottom_right(pos));
-        add_if_valid(l, move_horizontally_bottom_left(pos));
+        add_if_valid(l, move_horizontally_bottom_right(pos), cell, true);
+        add_if_valid(l, move_horizontally_bottom_left(pos), cell, true);
 
         pos = move_horizontally_top_right(move_horizontally_top_right(key));
-        add_if_valid(l, move_vertically_up(pos));
-        add_if_valid(l, move_horizontally_bottom_right(pos));
+        add_if_valid(l, move_vertically_up(pos), cell, true);
+        add_if_valid(l, move_horizontally_bottom_right(pos), cell, true);
 
         pos = move_horizontally_bottom_right(move_horizontally_bottom_right(key));
-        add_if_valid(l, move_vertically_down(pos));
-        add_if_valid(l, move_horizontally_top_right(pos));
+        add_if_valid(l, move_vertically_down(pos), cell, true);
+        add_if_valid(l, move_horizontally_top_right(pos), cell, true);
 
         pos = move_horizontally_bottom_left(move_horizontally_bottom_left(key));
-        add_if_valid(l, move_vertically_down(pos));
-        add_if_valid(l, move_horizontally_top_left(pos));
+        add_if_valid(l, move_vertically_down(pos), cell, true);
+        add_if_valid(l, move_horizontally_top_left(pos), cell, true);
 
         pos = move_horizontally_top_left(move_horizontally_top_left(key));
-        add_if_valid(l, move_vertically_up(pos));
-        add_if_valid(l, move_horizontally_bottom_left(pos));
+        add_if_valid(l, move_vertically_up(pos), cell, true);
+        add_if_valid(l, move_horizontally_bottom_left(pos), cell, true);
     }
 
     void add_rook_moves(list<int>& l, int key, Cell* cell) {
@@ -245,7 +273,7 @@ class Board {
                          , &move_vertically_up
                          , &move_vertically_down
                          };
-        add_valid_moves(l, key, fns, 6);
+        add_valid_moves(l, key, fns, 6, cell);
     }
 
     void add_queen_moves(list<int>& l, int key, Cell* cell) {
@@ -254,34 +282,54 @@ class Board {
     }
 
     void add_king_moves(list<int>& l, int key, Cell* cell) {
-        add_if_valid(l, move_vertically_up(key));
-        add_if_valid(l, move_vertically_down(key));
-        add_if_valid(l, move_horizontally_top_right(key));
-        add_if_valid(l, move_horizontally_top_left(key));
-        add_if_valid(l, move_horizontally_bottom_right(key));
-        add_if_valid(l, move_horizontally_bottom_left(key));
-        add_if_valid(l, move_diagonally_top_right(key));
-        add_if_valid(l, move_diagonally_top_left(key));
-        add_if_valid(l, move_diagonally_bottom_right(key));
-        add_if_valid(l, move_diagonally_bottom_left(key));
+        add_if_valid(l, move_vertically_up(key), cell, true);
+        add_if_valid(l, move_vertically_down(key), cell, true);
+        add_if_valid(l, move_horizontally_top_right(key), cell, true);
+        add_if_valid(l, move_horizontally_top_left(key), cell, true);
+        add_if_valid(l, move_horizontally_bottom_right(key), cell, true);
+        add_if_valid(l, move_horizontally_bottom_left(key), cell, true);
+        add_if_valid(l, move_diagonally_top_right(key), cell, true);
+        add_if_valid(l, move_diagonally_top_left(key), cell, true);
+        add_if_valid(l, move_diagonally_bottom_right(key), cell, true);
+        add_if_valid(l, move_diagonally_bottom_left(key), cell, true);
     }
 
-    void add_valid_moves(list<int>& l, const int key, TMoveFn fns[], int fns_count) {
+    void add_valid_moves(list<int>& l, const int key, TMoveFn fns[], int fns_count, Cell* cell) {
         int current_pos;
         for (int i = 0; i < fns_count; i++) {
             TMoveFn fn = fns[i];
             current_pos = fn(key);
             while (is_valid_position(current_pos)) {
-                l.push_front(current_pos);
-                current_pos = fn(current_pos);
+                Cell* c = board_map[current_pos];
+                if (c->has_piece()) {
+                    if (c->has_piece_of_same_color(cell)) {
+                        // cannot take a piece of the same color and cannot move further
+                        break;
+                    } else {
+                        // can take a piece of the opposite color but cannot move further
+                        l.push_front(current_pos);
+                        break;
+                    }
+                } else {
+                    // empty cell, can continue moving
+                    l.push_front(current_pos);
+                    current_pos = fn(current_pos);
+                }
             }
         }
     }
 
 
-    inline void add_if_valid(list<int>& l, int key) {
+    inline void add_if_valid(list<int>& l, int key, Cell* cell, bool can_take) {
         if (is_valid_position(key)) {
-            l.push_front(key);
+            Cell* c = board_map[key];
+            if (c->has_piece()) {
+                if (c->has_piece_of_opposite_color(cell) && can_take) {
+                    l.push_front(key);
+                }
+            } else {
+                l.push_front(key);
+            }
         }
     }
 
@@ -369,26 +417,3 @@ class Board {
         return key & 0xFF;
     }
 };
-
-void print_moves(Board* b, int x, int y, Cell::PieceType pt, Cell::PieceColor pc, string piece_name) {
-    Position p = Position{x, y};
-    b->set_piece(p, pt, pc);
-    list<Position> lp = b->get_valid_moves(p);
-    cout << piece_name << " x: " << p.x << ", y: " << p.y << endl;
-    cout << "Valid moves: " << endl;
-    for_each(lp.begin(), lp.end(), [](Position& p) {
-        cout << "x: " << p.x << ", y: " << p.y << endl;
-    });
-}
-
-// int main() {
-//     cout << "Start test" << endl;
-
-//     Board* b = new Board();
-
-//     print_moves(b, 0, 0, Cell::PieceType::knight, Cell::PieceColor::white, "Knight");
-//     print_moves(b, 1, 0, Cell::PieceType::pawn, Cell::PieceColor::white, "Pawn");
-
-//     cout << "End test" << endl;
-//     return 0;
-// }
