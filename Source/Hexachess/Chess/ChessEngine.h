@@ -72,6 +72,16 @@ class Cell {
         return piece_color;
     }
     
+    PieceColor get_opposite_color() {
+        switch (piece_color) {
+            case PieceColor::white:
+                return PieceColor::black;
+            case PieceColor::black:
+                return PieceColor::white;
+        }
+        return PieceColor::absent;
+    }
+    
     private:
     PieceType piece = PieceType::none;
     PieceColor piece_color = PieceColor::absent;
@@ -100,7 +110,53 @@ class Board {
     }
 
     list<Position> get_valid_moves(Position& pos) {
+        auto key = to_position_key(pos);
+        auto moves = get_valid_moves(key);
+        list<Position> pos_list = {};
+        for (const int k : moves) {
+            Position p = this->to_position(k);
+            pos_list.push_front(p);
+        }
+        return pos_list;
+    }
+
+    bool move_piece(Position& start, Position& goal) {
+        int sp = to_position_key(start);
+        if (is_valid_position(sp) && is_valid_position(goal)) {
+            Cell::PieceType pt = board_map[sp]->get_piece_type();
+            Cell::PieceColor pc = board_map[sp]->get_piece_color();
+            board_map[sp]->remove_piece();
+            set_piece(goal, pt, pc);
+        }
+        return true;
+    }
+
+    bool set_piece(Position& pos, Cell::PieceType pt, Cell::PieceColor pc) {
         int key = to_position_key(pos);
+        if (!is_valid_position(key)) {
+            return false;
+        }
+        board_map[key]->set_piece(pt, pc);
+        return false;
+    }
+
+    bool can_be_captured(Position& pos) {
+        int key = to_position_key(pos);
+        return can_be_captured(key);
+    }
+
+    private:
+
+    using TMoveFn = int (*)(const int);
+
+    static const int median = 5;
+    static const int max = 10;
+    static const int step_x = 1 << 8;
+    map<int, Cell*> board_map;
+    const vector<int> white_pawn_cell_keys = {256, 513, 770, 1027, 1284, 1539, 1794, 2049, 2304};
+    const vector<int> black_pawn_cell_keys = {262, 518, 774, 1030, 1286, 1542, 1798, 2054, 2310};
+
+    list<int> get_valid_moves(int key) {
         Cell* cell = board_map[key];
         list<int> l = {};
         switch (cell->get_piece_type()) {
@@ -124,45 +180,9 @@ class Board {
             case Cell::PieceType::king:
                 add_king_moves(l, key, cell);
                 break;
-        };
-        list<Position> ret_l = {};
-        for_each(l.begin(), l.end(), [&ret_l = ret_l, this](int k) {
-            Position p = this->to_position(k);
-            ret_l.push_front(p);
-        });
-        return ret_l;
-    }
-
-    bool move_piece(Position& start, Position& goal) {
-        int sp = to_position_key(start);
-        if (is_valid_position(sp) && is_valid_position(goal)) {
-            Cell::PieceType pt = board_map[sp]->get_piece_type();
-            Cell::PieceColor pc = board_map[sp]->get_piece_color();
-            board_map[sp]->remove_piece();
-            set_piece(goal, pt, pc);
         }
-        return true;
+        return l;
     }
-
-    bool set_piece(Position& pos, Cell::PieceType pt, Cell::PieceColor pc) {
-        int key = to_position_key(pos);
-        if (!is_valid_position(key)) {
-            return false;
-        }
-        board_map[key]->set_piece(pt, pc);
-        return false;
-    }
-
-    private:
-
-    using TMoveFn = int (*)(const int);
-
-    static const int median = 5;
-    static const int max = 10;
-    static const int step_x = 1 << 8;
-    map<int, Cell*> board_map;
-    const vector<int> white_pawn_cell_keys = {256, 513, 770, 1027, 1284, 1541, 1796, 2051, 2306};
-    const vector<int> black_pawn_cell_keys = {262, 518, 774, 1030, 1286, 1542, 1798, 2054, 2310};
 
     inline int to_position_key(int x, int y) {
         return (x << 8) + y;
@@ -325,7 +345,6 @@ class Board {
         }
     }
 
-
     inline void add_if_valid(list<int>& l, int key, Cell* cell, bool can_take) {
         if (is_valid_position(key)) {
             Cell* c = board_map[key];
@@ -421,5 +440,32 @@ class Board {
 
     static inline int get_y(const int key) {
         return key & 0xFF;
+    }
+
+    list<int> get_piece_keys(Cell::PieceColor pc) {
+        list<int> l = {};
+        for(const auto& [key, cell] : board_map) {
+            if (cell->get_piece_color() == pc) {
+                l.push_front(key);
+            }
+        }
+        return l;
+    }
+
+    list<int> get_all_piece_move_keys(Cell::PieceColor pc) {
+        list<int> all_moves = {};
+        auto all_piece_keys = get_piece_keys(pc);
+        for (int key : all_piece_keys) {
+            auto moves = get_valid_moves(key);
+            all_moves.insert(all_moves.end(), moves.begin(), moves.end());
+        }
+        return all_moves;
+    }
+
+    bool can_be_captured(const int key) {
+        Cell::PieceColor pc = board_map[key]->get_opposite_color();
+        auto all_moves = get_all_piece_move_keys(pc);
+        auto k = find(begin(all_moves), end(all_moves), key);
+        return k != end(all_moves);
     }
 };
