@@ -4,6 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
+
+#include "Types/PieceInfo.h"
+
 #include "HexachessGameModeBase.generated.h"
 
 
@@ -44,7 +47,7 @@ public:
 	// game logic
 
 	UFUNCTION(BlueprintCallable)
-	virtual void CreatePieces() {}
+	virtual void RegisterPiece(FPieceInfo PieceInfo);
 
 	UFUNCTION(BlueprintCallable)
 	virtual void CreateLogicalBoard();

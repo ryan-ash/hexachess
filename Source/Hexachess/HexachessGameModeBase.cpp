@@ -24,7 +24,6 @@ void AHexachessGameModeBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 void AHexachessGameModeBase::StartGame()
 {
-    CreatePieces();
     CreateLogicalBoard();
 }
 
@@ -35,6 +34,34 @@ void AHexachessGameModeBase::EndGame()
         delete ActiveBoard;
         ActiveBoard = nullptr;
     }
+}
+
+void AHexachessGameModeBase::RegisterPiece(FPieceInfo PieceInfo)
+{
+    const auto PieceType = [&]()
+    {
+        switch (PieceInfo.Type)
+        {
+        case EPieceType::Pawn:
+            return Cell::PieceType::pawn;
+        case EPieceType::Knight:
+            return Cell::PieceType::knight;
+        case EPieceType::Bishop:
+            return Cell::PieceType::bishop;
+        case EPieceType::Rook:
+            return Cell::PieceType::rook;
+        case EPieceType::Queen:
+            return Cell::PieceType::queen;
+        case EPieceType::King:
+            return Cell::PieceType::king;
+        default:
+            return Cell::PieceType::pawn;
+        }
+    }();
+
+    // crashes here:
+    // auto PiecePosition = Position(PieceInfo.X, PieceInfo.Y);
+    // ActiveBoard->set_piece(PiecePosition, PieceType, PieceInfo.TeamID == 0 ? Cell::PieceColor::white : Cell::PieceColor::black);
 }
 
 void AHexachessGameModeBase::CreateLogicalBoard()
