@@ -229,7 +229,7 @@ class Board {
                 cell_keys = &black_pawn_cell_keys;
                 break;
             default:
-                cell_keys = {};
+                return false;
         }
         auto arr_end = end(*cell_keys);
         auto k = find(begin(*cell_keys), arr_end, key);
