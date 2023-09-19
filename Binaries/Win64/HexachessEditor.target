@@ -6032,6 +6032,18 @@
 		{
 			"Path": "$(ProjectDir)/Plugins/ElectronicNodes/Binaries/Win64/UnrealEditor.modules",
 			"Type": "RequiredResource"
+		},
+		{
+			"Path": "$(ProjectDir)/Plugins/Onlooker/Binaries/Win64/UnrealEditor-Onlooker.dll",
+			"Type": "DynamicLibrary"
+		},
+		{
+			"Path": "$(ProjectDir)/Plugins/Onlooker/Binaries/Win64/UnrealEditor-Onlooker.pdb",
+			"Type": "SymbolFile"
+		},
+		{
+			"Path": "$(ProjectDir)/Plugins/Onlooker/Binaries/Win64/UnrealEditor.modules",
+			"Type": "RequiredResource"
 		}
 	],
 	"RuntimeDependencies": [
@@ -27225,6 +27237,10 @@
 		},
 		{
 			"Path": "$(ProjectDir)/Plugins/ElectronicNodes/ElectronicNodes.uplugin",
+			"Type": "UFS"
+		},
+		{
+			"Path": "$(ProjectDir)/Plugins/Onlooker/Onlooker.uplugin",
 			"Type": "UFS"
 		}
 	],

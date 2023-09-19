@@ -1,0 +1,25 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "0.1",
+	"FriendlyName": "Onlooker",
+	"Description": "Plugin for adding flexible visualization & demonstration functionality to your projects",
+	"Category": "Gameplay",
+	"CreatedBy": "Deep Space",
+	"CreatedByURL": "",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"EngineVersion": "5.2.0",
+	"CanContainContent": true,
+	"Installed": true,
+	"Modules": [
+		{
+			"Name": "Onlooker",
+			"Type": "Runtime",
+			"LoadingPhase": "PreDefault"
+		}
+	],
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false
+}

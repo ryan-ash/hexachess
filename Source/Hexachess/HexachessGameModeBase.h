@@ -47,10 +47,16 @@ public:
 	// game logic
 
 	UFUNCTION(BlueprintCallable)
+	virtual void CreateLogicalBoard();
+
+	UFUNCTION(BlueprintCallable)
 	virtual void RegisterPiece(FPieceInfo PieceInfo);
 
 	UFUNCTION(BlueprintCallable)
-	virtual void CreateLogicalBoard();
+	virtual TArray<FIntPoint> GetMovesForCell(FIntPoint InPosition);
+
+	UFUNCTION(BlueprintCallable)
+	virtual void MovePiece(FIntPoint From, FIntPoint To);
 
 private:
 
