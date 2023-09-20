@@ -20,6 +20,12 @@
 			"LoadingPhase": "PreDefault"
 		}
 	],
+	"Plugins": [
+		{
+			"Name": "SunPosition",
+			"Enabled": true
+		}
+	],
 	"IsBetaVersion": false,
 	"IsExperimentalVersion": false
 }
