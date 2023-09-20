@@ -24,7 +24,7 @@ public:
 
 	AHexachessGameModeBase();
 
-	virtual void BeginPlay() override;
+	/*virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	// session boilerplate for later
@@ -63,6 +63,6 @@ public:
 
 private:
 
-	Board* ActiveBoard = nullptr;
+	Board* ActiveBoard = nullptr;*/
 };
 

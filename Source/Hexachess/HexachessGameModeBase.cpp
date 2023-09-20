@@ -8,7 +8,7 @@ AHexachessGameModeBase::AHexachessGameModeBase() : Super()
 
 }
 
-void AHexachessGameModeBase::BeginPlay()
+/*void AHexachessGameModeBase::BeginPlay()
 {
     Super::BeginPlay();
 
@@ -96,4 +96,4 @@ bool AHexachessGameModeBase::IsCellUnderAttack(FIntPoint InPosition)
 {
     Position PiecePosition = Position{InPosition.X, InPosition.Y};
     return ActiveBoard->can_be_captured(PiecePosition);
-}
+}*/

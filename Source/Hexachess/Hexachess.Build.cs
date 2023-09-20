@@ -10,7 +10,7 @@ public class Hexachess : ModuleRules
 
         bLegacyPublicIncludePaths = false;
 
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "Sockets", "Json", "JsonUtilities", "HTTP"});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 
