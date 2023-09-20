@@ -39,15 +39,6 @@ void AHexachessGameModeBase::EndGame()
 void AHexachessGameModeBase::CreateLogicalBoard()
 {
     ActiveBoard = new Board();
-
-    //     print_moves(b, 0, 0, Cell::PieceType::knight, Cell::PieceColor::white, "Knight");
-    //     print_moves(b, 1, 0, Cell::PieceType::pawn, Cell::PieceColor::white, "Pawn");
-
-    // void print_moves(Board* b, int x, int y, Cell::PieceType pt, Cell::PieceColor pc, string piece_name) {
-
-        // b->set_piece(p, pt, pc);
-        // list<Position> lp = b->get_valid_moves(p);
-
 }
 
 void AHexachessGameModeBase::RegisterPiece(FPieceInfo PieceInfo)
@@ -99,4 +90,10 @@ void AHexachessGameModeBase::MovePiece(FIntPoint From, FIntPoint To)
     Position ToPosition = Position{To.X, To.Y};
 
     ActiveBoard->move_piece(FromPosition, ToPosition);
+}
+
+bool AHexachessGameModeBase::IsCellUnderAttack(FIntPoint InPosition)
+{
+    Position PiecePosition = Position{InPosition.X, InPosition.Y};
+    return ActiveBoard->can_be_captured(PiecePosition);
 }

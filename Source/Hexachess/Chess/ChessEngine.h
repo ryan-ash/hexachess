@@ -3,6 +3,11 @@
 #include <algorithm>
 #include <vector>
 
+#if WITH_EDITOR
+#include <CoreMinimal.h>
+DEFINE_LOG_CATEGORY_STATIC(LogChessEngine, Log, All);
+#endif
+
 using namespace std;
 
 struct Position {
@@ -25,6 +30,7 @@ class Cell {
 
     Cell() {}
     Cell(PieceType pt, PieceColor pc): piece(pt), piece_color(pc) {}
+    Cell(Cell& other): piece(other.piece), piece_color(other.piece_color) {}
 
     void set_piece(PieceType pt, PieceColor pc) {
         piece = pt;
@@ -121,28 +127,46 @@ class Board {
     }
 
     bool move_piece(Position& start, Position& goal) {
+        return move_piece(board_map, start, goal);
+    }
+
+    bool move_piece(map<int, Cell*>& in_board, Position& start, Position& goal) {
+        bool is_main_board = &in_board == &board_map;
+
+        #if WITH_EDITOR
+        UE_LOG(LogChessEngine, Log, TEXT("%s: Move piece from (%d, %d) to (%d, %d)"), is_main_board ? TEXT("MAIN") : TEXT("INNER"), start.x, start.y, goal.x, goal.y);
+        #endif
+
         int sp = to_position_key(start);
-        if (is_valid_position(sp) && is_valid_position(goal)) {
-            Cell::PieceType pt = board_map[sp]->get_piece_type();
-            Cell::PieceColor pc = board_map[sp]->get_piece_color();
-            board_map[sp]->remove_piece();
-            set_piece(goal, pt, pc);
+        if (is_valid_position(in_board, sp) && is_valid_position(in_board, goal)) {
+            Cell::PieceType pt = in_board[sp]->get_piece_type();
+            Cell::PieceColor pc = in_board[sp]->get_piece_color();
+            in_board[sp]->remove_piece();
+            set_piece(in_board, goal, pt, pc);
         }
         return true;
     }
 
     bool set_piece(Position& pos, Cell::PieceType pt, Cell::PieceColor pc) {
+        return set_piece(board_map, pos, pt, pc);
+    }
+
+    bool set_piece(map<int, Cell*>& in_board, Position& pos, Cell::PieceType pt, Cell::PieceColor pc) {
         int key = to_position_key(pos);
-        if (!is_valid_position(key)) {
+        if (!is_valid_position(in_board, key)) {
             return false;
         }
-        board_map[key]->set_piece(pt, pc);
+        in_board[key]->set_piece(pt, pc);
         return false;
     }
 
     bool can_be_captured(Position& pos) {
+        return can_be_captured(board_map, pos);
+    }
+
+    bool can_be_captured(map<int, Cell*>& in_board, Position& pos) {
         int key = to_position_key(pos);
-        return can_be_captured(key);
+        return can_be_captured(in_board, key);
     }
 
     private:
@@ -157,7 +181,11 @@ class Board {
     const vector<int> black_pawn_cell_keys = {262, 518, 774, 1030, 1286, 1542, 1798, 2054, 2310};
 
     list<int> get_valid_moves(int key) {
-        Cell* cell = board_map[key];
+        return get_valid_moves(board_map, key);
+    }
+
+    list<int> get_valid_moves(map<int, Cell*>& in_board, int key, bool skip_filter = false) {
+        Cell* cell = in_board[key];
         list<int> l = {};
         switch (cell->get_piece_type()) {
             case Cell::PieceType::none:
@@ -181,7 +209,29 @@ class Board {
                 add_king_moves(l, key, cell);
                 break;
         }
-        return l;
+
+        list<int> filtered_list = {};
+        auto color_pieces = get_piece_keys(cell->get_piece_color());
+        int king_key = -1;
+        for (auto piece_key : color_pieces) {
+            if (in_board[piece_key]->get_piece_type() == Cell::PieceType::king) {
+                king_key = piece_key;
+                break;
+            }
+        }
+        if (skip_filter || king_key == -1) {
+            return l;
+        }
+        for (int k : l) {
+            auto board_copy = copy_board_map();
+            Position start = to_position(key);
+            Position goal = to_position(k);
+            move_piece(board_copy, start, goal);
+            if (!can_be_captured(board_copy, king_key)) {
+                filtered_list.push_front(k);
+            }
+        }
+        return filtered_list;
     }
 
     inline int to_position_key(int x, int y) {
@@ -198,11 +248,19 @@ class Board {
     }
 
     inline bool is_valid_position(int key) {
-        return board_map.find(key) != board_map.end();
+        return is_valid_position(board_map, key);
+    }
+
+    inline bool is_valid_position(map<int, Cell*>& in_board, int key) {
+        return in_board.find(key) != in_board.end();
     }
 
     inline bool is_valid_position(Position& pos) {
-        return is_valid_position(to_position_key(pos));
+        return is_valid_position(board_map, pos);
+    }
+
+    inline bool is_valid_position(map<int, Cell*>& in_board, Position& pos) {
+        return is_valid_position(in_board, to_position_key(pos));
     }
 
     void add_pawn_moves(list<int>& l, int key, Cell* cell) {
@@ -258,12 +316,14 @@ class Board {
     }
 
     void add_bishop_moves(list<int>& l, int key, Cell* cell) {
-        TMoveFn fns[4] = { &move_diagonally_top_right
+        TMoveFn fns[6] = { &move_diagonally_top_right
                          , &move_diagonally_top_left
                          , &move_diagonally_bottom_right
                          , &move_diagonally_bottom_left
+                         , &move_diagonally_right
+                         , &move_diagonally_left
                          };
-        add_valid_moves(l, key, fns, 4, cell);
+        add_valid_moves(l, key, fns, 6, cell);
     }
 
     void add_knight_moves(list<int>& l, int key, Cell* cell) {
@@ -432,6 +492,44 @@ class Board {
         }
     }
 
+    static int move_diagonally_right(const int key) {
+        int x = get_x(key);
+        if (x % 2 == 0) {
+            if (x == median - 1) {
+                return key + step_x*2; // x+2, y
+            } else if (x < median) {
+                return key + step_x*2 + 1; // x+2, y+1
+            } else {
+                return key + step_x*2 - 1; // x+2, y-1
+            }
+        } else {
+            if (x < median) {
+                return key + step_x*2 + 1; // x+2, y+1
+            } else {
+                return key + step_x*2 - 1; // x+2, y-1
+            }
+        }
+    }
+
+    static int move_diagonally_left(const int key) {
+        int x = get_x(key);
+        if (x % 2 == 0) {
+            if (x == median + 1) {
+                return key - step_x*2; // x-2, y
+            } else if (x < median) {
+                return key - step_x*2 - 1; // x-2, y-1
+            } else {
+                return key - step_x*2 + 1; // x-2, y+1
+            }
+        } else {
+            if (x <= median) {
+                return key - step_x*2 - 1; // x-2, y-1
+            } else {
+                return key - step_x*2 + 1; // x-2, y+1
+            }
+        }
+    }
+
     static int ping(const int key) {
         return key;
     }
@@ -445,8 +543,12 @@ class Board {
     }
 
     list<int> get_piece_keys(Cell::PieceColor pc) {
+        return get_piece_keys(board_map, pc);
+    }
+
+    list<int> get_piece_keys(map<int, Cell*>& in_board, Cell::PieceColor pc) {
         list<int> l = {};
-        for(const auto& [key, cell] : board_map) {
+        for(const auto& [key, cell] : in_board) {
             if (cell->get_piece_color() == pc) {
                 l.push_front(key);
             }
@@ -455,19 +557,35 @@ class Board {
     }
 
     list<int> get_all_piece_move_keys(Cell::PieceColor pc) {
+        return get_all_piece_move_keys(board_map, pc);
+    }
+
+    list<int> get_all_piece_move_keys(map<int, Cell*>& in_board, Cell::PieceColor pc) {
         list<int> all_moves = {};
-        auto all_piece_keys = get_piece_keys(pc);
+        auto all_piece_keys = get_piece_keys(in_board, pc);
         for (int key : all_piece_keys) {
-            auto moves = get_valid_moves(key);
+            auto moves = get_valid_moves(in_board, key, true);
             all_moves.insert(all_moves.end(), moves.begin(), moves.end());
         }
         return all_moves;
     }
 
     bool can_be_captured(const int key) {
-        Cell::PieceColor pc = board_map[key]->get_opposite_color();
-        auto all_moves = get_all_piece_move_keys(pc);
+        return can_be_captured(board_map, key);
+    }
+
+    bool can_be_captured(map<int, Cell*>& in_board, const int key) {
+        Cell::PieceColor pc = in_board[key]->get_opposite_color();
+        auto all_moves = get_all_piece_move_keys(in_board, pc);
         auto k = find(begin(all_moves), end(all_moves), key);
         return k != end(all_moves);
+    }
+
+    map<int, Cell*> copy_board_map() {
+        map<int, Cell*> board_map_copy = {};
+        for (const auto& [key, cell] : this->board_map) {
+            board_map_copy[key] = new Cell(*cell);
+        }
+        return board_map_copy;
     }
 };
