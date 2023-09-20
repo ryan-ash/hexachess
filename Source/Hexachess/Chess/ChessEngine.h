@@ -258,12 +258,14 @@ class Board {
     }
 
     void add_bishop_moves(list<int>& l, int key, Cell* cell) {
-        TMoveFn fns[4] = { &move_diagonally_top_right
+        TMoveFn fns[6] = { &move_diagonally_top_right
                          , &move_diagonally_top_left
                          , &move_diagonally_bottom_right
                          , &move_diagonally_bottom_left
+                         , &move_diagonally_right
+                         , &move_diagonally_left
                          };
-        add_valid_moves(l, key, fns, 4, cell);
+        add_valid_moves(l, key, fns, 6, cell);
     }
 
     void add_knight_moves(list<int>& l, int key, Cell* cell) {
@@ -432,6 +434,44 @@ class Board {
         }
     }
 
+    static int move_diagonally_right(const int key) {
+        int x = get_x(key);
+        if (x % 2 == 0) {
+            if (x == median - 1) {
+                return key + step_x*2; // x+2, y
+            } else if (x < median) {
+                return key + step_x*2 + 1; // x+2, y+1
+            } else {
+                return key + step_x*2 - 1; // x+2, y-1
+            }
+        } else {
+            if (x < median) {
+                return key + step_x*2 + 1; // x+2, y+1
+            } else {
+                return key + step_x*2 - 1; // x+2, y-1
+            }
+        }
+    }
+
+    static int move_diagonally_left(const int key) {
+        int x = get_x(key);
+        if (x % 2 == 0) {
+            if (x == median + 1) {
+                return key - step_x*2; // x-2, y
+            } else if (x < median) {
+                return key - step_x*2 - 1; // x-2, y-1
+            } else {
+                return key - step_x*2 + 1; // x-2, y+1
+            }
+        } else {
+            if (x <= median) {
+                return key - step_x*2 - 1; // x-2, y-1
+            } else {
+                return key - step_x*2 + 1; // x-2, y+1
+            }
+        }
+    }
+
     static int ping(const int key) {
         return key;
     }
@@ -471,3 +511,8 @@ class Board {
         return k != end(all_moves);
     }
 };
+
+// add validation for "will this move lead to check to my king"
+// - 
+
+
