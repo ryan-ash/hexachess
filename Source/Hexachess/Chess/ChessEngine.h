@@ -126,6 +126,15 @@ class Board {
         return pos_list;
     }
 
+    bool are_there_valid_moves(Cell::PieceColor pc) {
+        return are_there_valid_moves(board_map, pc);
+    }
+
+    bool are_there_valid_moves(map<int, Cell*>& in_board, Cell::PieceColor pc) {
+        auto all_moves = get_all_piece_move_keys(in_board, pc);
+        return all_moves.size() > 0;
+    }
+
     bool move_piece(Position& start, Position& goal) {
         return move_piece(board_map, start, goal);
     }

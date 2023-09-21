@@ -96,3 +96,8 @@ bool AHexaGameState::IsCellUnderAttack(FIntPoint InPosition)
     Position PiecePosition = Position{InPosition.X, InPosition.Y};
     return ActiveBoard->can_be_captured(PiecePosition);
 }
+
+bool AHexaGameState::AreThereValidMovesForPlayer(bool IsWhitePlayer)
+{
+    return ActiveBoard->are_there_valid_moves(IsWhitePlayer ? Cell::PieceColor::white : Cell::PieceColor::black);
+}

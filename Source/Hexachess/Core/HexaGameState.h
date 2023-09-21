@@ -61,6 +61,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	virtual bool IsCellUnderAttack(FIntPoint InPosition);
 
+	UFUNCTION(BlueprintCallable)
+	virtual bool AreThereValidMovesForPlayer(bool IsWhitePlayer);
+
 private:
 	
 	Board* ActiveBoard = nullptr;
