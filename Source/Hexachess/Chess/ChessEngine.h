@@ -226,8 +226,18 @@ class Board {
             auto board_copy = copy_board_map();
             Position start = to_position(key);
             Position goal = to_position(k);
+
+            // to debug:
+            // - draw boards in log
+            // - figure out which method is broken
+            // - fix it
+
             move_piece(board_copy, start, goal);
-            if (!can_be_captured(board_copy, king_key)) {
+            auto final_king_key = king_key;
+            if (cell->get_piece_type() == Cell::PieceType::king) {
+                final_king_key = k;
+            }
+            if (!can_be_captured(board_copy, final_king_key)) {
                 filtered_list.push_front(k);
             }
         }
