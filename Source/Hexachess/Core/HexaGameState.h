@@ -62,7 +62,7 @@ public:
 	virtual bool IsCellUnderAttack(FIntPoint InPosition);
 
 private:
-
+	
 	Board* ActiveBoard = nullptr;
 };
 
