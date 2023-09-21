@@ -101,3 +101,17 @@ bool AHexaGameState::AreThereValidMovesForPlayer(bool IsWhitePlayer)
 {
     return ActiveBoard->are_there_valid_moves(IsWhitePlayer ? Cell::PieceColor::white : Cell::PieceColor::black);
 }
+
+TArray<FIntPoint> AHexaGameState::GetValidMovesForPlayer(bool IsWhitePlayer)
+{
+    TArray<FIntPoint> Result;
+
+    list<int> MoveKeys = ActiveBoard->get_all_piece_move_keys(IsWhitePlayer ? Cell::PieceColor::white : Cell::PieceColor::black);
+    for (const auto& Move : MoveKeys)
+    {
+        Position MovePosition = ActiveBoard->to_position(Move);
+        Result.Add(FIntPoint{MovePosition.x, MovePosition.y});
+    }
+
+    return Result;
+}
