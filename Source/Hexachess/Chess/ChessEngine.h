@@ -126,6 +126,15 @@ class Board {
         return pos_list;
     }
 
+    list<int> get_all_piece_move_keys(Cell::PieceColor pc, bool skip_filter = false) {
+        return get_all_piece_move_keys(board_map, pc, skip_filter);
+    }
+
+    Position to_position(int key) {
+        Position pos = Position{get_x(key), get_y(key)};
+        return pos;
+    }
+
     bool are_there_valid_moves(Cell::PieceColor pc) {
         return are_there_valid_moves(board_map, pc);
     }
@@ -259,11 +268,6 @@ class Board {
 
     inline int to_position_key(Position pos) {
         return to_position_key(pos.x, pos.y);
-    }
-
-    Position to_position(int key) {
-        Position pos = Position{get_x(key), get_y(key)};
-        return pos;
     }
 
     inline bool is_valid_position(int key) {
@@ -575,15 +579,11 @@ class Board {
         return l;
     }
 
-    list<int> get_all_piece_move_keys(Cell::PieceColor pc) {
-        return get_all_piece_move_keys(board_map, pc);
-    }
-
-    list<int> get_all_piece_move_keys(map<int, Cell*>& in_board, Cell::PieceColor pc) {
+    list<int> get_all_piece_move_keys(map<int, Cell*>& in_board, Cell::PieceColor pc, bool skip_filter = false) {
         list<int> all_moves = {};
         auto all_piece_keys = get_piece_keys(in_board, pc);
         for (int key : all_piece_keys) {
-            auto moves = get_valid_moves(in_board, key, true);
+            auto moves = get_valid_moves(in_board, key, skip_filter);
             all_moves.insert(all_moves.end(), moves.begin(), moves.end());
         }
         return all_moves;
@@ -595,7 +595,7 @@ class Board {
 
     bool can_be_captured(map<int, Cell*>& in_board, const int key) {
         Cell::PieceColor pc = in_board[key]->get_opposite_color();
-        auto all_moves = get_all_piece_move_keys(in_board, pc);
+        auto all_moves = get_all_piece_move_keys(in_board, pc, true);
         auto k = find(begin(all_moves), end(all_moves), key);
         return k != end(all_moves);
     }

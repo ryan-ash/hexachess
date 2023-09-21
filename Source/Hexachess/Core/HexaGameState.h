@@ -64,6 +64,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	virtual bool AreThereValidMovesForPlayer(bool IsWhitePlayer);
 
+	UFUNCTION(BlueprintCallable)
+	virtual TArray<FIntPoint> GetValidMovesForPlayer(bool IsWhitePlayer);
+
 private:
 	
 	Board* ActiveBoard = nullptr;
