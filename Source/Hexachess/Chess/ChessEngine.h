@@ -190,6 +190,8 @@ class Board {
             if (!can_be_captured(board_copy, final_king_key)) {
                 filtered_list.push_front(k);
             }
+
+            clear_board_map(board_copy);
         }
         return filtered_list;
     }
@@ -348,6 +350,13 @@ class Board {
             board_map_copy[key] = new Cell(*cell);
         }
         return board_map_copy;
+    }
+
+    void clear_board_map(std::map<int, Cell*>& in_board) {
+        for (auto& pair : in_board) {
+            delete pair.second;  // Deletes the pointer
+        }
+        in_board.clear();  // Clears the map
     }
 
     map<int, Cell*> board_map;

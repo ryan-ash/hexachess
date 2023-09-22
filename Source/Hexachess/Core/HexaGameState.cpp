@@ -211,6 +211,7 @@ float AHexaGameState::MiniMax(map<int, Cell*>& in_board, int32 Depth, bool IsWhi
                 ActiveBoard->move_piece(board_copy, start, goal);
                 float Eval = MiniMax(board_copy, Depth - 1, false, Alpha, Beta, selected_from_key, selected_to_key);
 
+                ActiveBoard->clear_board_map(board_copy);
                 if (Eval > MaxEval)
                 {
                     selected_from_key = piece;
@@ -239,6 +240,7 @@ float AHexaGameState::MiniMax(map<int, Cell*>& in_board, int32 Depth, bool IsWhi
                 ActiveBoard->move_piece(board_copy, start, goal);
                 float Eval = MiniMax(board_copy, Depth - 1, true, Alpha, Beta, selected_from_key, selected_to_key);
 
+                ActiveBoard->clear_board_map(board_copy);
                 if (Eval < MinEval)
                 {
                     selected_from_key = piece;
