@@ -1,11 +1,10 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameStateBase.h"
 
 #include "Hexachess/Types/PieceInfo.h"
+#include "Hexachess/Types/AIType.h"
 
 #include "HexaGameState.generated.h"
 
@@ -66,6 +65,14 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	virtual TArray<FIntPoint> GetValidMovesForPlayer(bool IsWhitePlayer);
+
+	// ai logic
+
+	/*
+	 * Returns the moves the AI wants to make. Doesn't actually updates the board.
+	 */
+	UFUNCTION(BlueprintCallable)
+	virtual TArray<FIntPoint> MakeAIMove(bool IsWhiteAI, EAIType AIType);
 
 private:
 	

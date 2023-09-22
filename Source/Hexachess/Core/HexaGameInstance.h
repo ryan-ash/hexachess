@@ -2,15 +2,10 @@
 
 #include <Engine/GameInstance.h>
 
+#include "Hexachess/Types/AIType.h"
+
 #include "HexaGameInstance.generated.h"
 
-UENUM(BlueprintType)
-enum class EAIType : uint8
-{
-    Random,
-    Copycat,
-    MinMax
-};
 
 UCLASS()
 class HEXACHESS_API UHexaGameInstance : public UGameInstance

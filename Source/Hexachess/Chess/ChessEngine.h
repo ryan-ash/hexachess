@@ -126,8 +126,33 @@ class Board {
         return pos_list;
     }
 
+    list<int> get_valid_moves(int key) {
+        return get_valid_moves(board_map, key);
+    }
+
+    list<int> get_piece_keys(Cell::PieceColor pc) {
+        return get_piece_keys(board_map, pc);
+    }
+
     list<int> get_all_piece_move_keys(Cell::PieceColor pc, bool skip_filter = false) {
         return get_all_piece_move_keys(board_map, pc, skip_filter);
+    }
+
+    list<int> get_possible_move_sources(int target, Cell::PieceColor pc) {
+        return get_possible_move_sources(board_map, target, pc);
+    }
+
+    list<int> get_possible_move_sources(map<int, Cell*>& in_board, int target, Cell::PieceColor pc) {
+        list<int> l = {};
+        auto all_moves = get_all_piece_move_keys(in_board, pc, true);
+        for (auto move : all_moves) {
+            auto moves = get_valid_moves(in_board, move, true);
+            auto k = find(begin(moves), end(moves), target);
+            if (k != end(moves)) {
+                l.push_front(move);
+            }
+        }
+        return l;
     }
 
     Position to_position(int key) {
@@ -197,10 +222,6 @@ class Board {
     map<int, Cell*> board_map;
     const vector<int> white_pawn_cell_keys = {256, 513, 770, 1027, 1284, 1539, 1794, 2049, 2304};
     const vector<int> black_pawn_cell_keys = {262, 518, 774, 1030, 1286, 1542, 1798, 2054, 2310};
-
-    list<int> get_valid_moves(int key) {
-        return get_valid_moves(board_map, key);
-    }
 
     list<int> get_valid_moves(map<int, Cell*>& in_board, int key, bool skip_filter = false) {
         Cell* cell = in_board[key];
@@ -563,10 +584,6 @@ class Board {
 
     static inline int get_y(const int key) {
         return key & 0xFF;
-    }
-
-    list<int> get_piece_keys(Cell::PieceColor pc) {
-        return get_piece_keys(board_map, pc);
     }
 
     list<int> get_piece_keys(map<int, Cell*>& in_board, Cell::PieceColor pc) {

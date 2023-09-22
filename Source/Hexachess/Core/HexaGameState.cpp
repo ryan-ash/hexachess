@@ -115,3 +115,41 @@ TArray<FIntPoint> AHexaGameState::GetValidMovesForPlayer(bool IsWhitePlayer)
 
     return Result;
 }
+
+TArray<FIntPoint> AHexaGameState::MakeAIMove(bool IsWhiteAI, EAIType AIType)
+{
+    TArray<FIntPoint> Result;
+
+    // this is a very naive implementation, but it should work for now
+    switch(AIType)
+    {
+        case EAIType::Random:
+        {
+            list<int> PieceKeys = ActiveBoard->get_piece_keys(IsWhiteAI ? Cell::PieceColor::white : Cell::PieceColor::black);
+            list<int> PieceKeysWithValidMoves;
+
+            bool foundValidMove = false;
+            while (!foundValidMove) {
+                int RandomIndex = FMath::RandRange(0, PieceKeys.size() - 1);
+                int RandomPieceKey = *std::next(PieceKeys.begin(), RandomIndex);
+                auto PieceMoves = ActiveBoard->get_valid_moves(RandomPieceKey);
+                if (PieceMoves.size() > 0)
+                {
+                    foundValidMove = true;
+                    int RandomMoveIndex = FMath::RandRange(0, PieceMoves.size() - 1);
+                    int RandomMoveKey = *std::next(PieceMoves.begin(), RandomMoveIndex);
+                    Position FromPosition = ActiveBoard->to_position(RandomPieceKey);
+                    Position ToPosition = ActiveBoard->to_position(RandomMoveKey);
+
+                    // ActiveBoard->move_piece(FromPosition, ToPosition);
+
+                    Result.Add(FIntPoint{FromPosition.x, FromPosition.y});
+                    Result.Add(FIntPoint{ToPosition.x, ToPosition.y});
+                }
+            }
+            break;
+        }
+    }
+
+    return Result;
+}
