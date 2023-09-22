@@ -1,8 +1,11 @@
 #pragma once
 
+#include <map>
+
 #include "CoreMinimal.h"
 #include "GameFramework/GameStateBase.h"
 
+#include "Hexachess/Chess/ChessEngine.h"
 #include "Hexachess/Types/PieceInfo.h"
 #include "Hexachess/Types/AIType.h"
 
@@ -10,6 +13,8 @@
 
 
 class Board;
+
+using namespace std;
 
 /**
  * 
@@ -74,8 +79,28 @@ public:
 	UFUNCTION(BlueprintCallable)
 	virtual TArray<FIntPoint> MakeAIMove(bool IsWhiteAI, EAIType AIType);
 
+
+	// TODO: fix this flow!
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAIFinishedCalculatingMove, FIntPoint, From, FIntPoint, To);
+
+	UPROPERTY(BlueprintAssignable)
+	FOnAIFinishedCalculatingMove OnAIFinishedCalculatingMove;
+
 private:
-	
+
+	TArray<FIntPoint> CalculateRandomAIMove(bool IsWhiteAI);
+	TArray<FIntPoint> CalculateCopycatAIMove(bool IsWhiteAI);
+	TArray<FIntPoint> CalculateMinMaxAIMove(bool IsWhiteAI);
+
+    // minmax algorithm
+    // - we need to get all the possible moves for the AI
+    // - for each move, we need to get all the possible moves for the player
+    // - repeat the recursion until the depth limit is reached
+    // - evaluate the board state for all bottom nodes (it's recursion exit point)
+    // - keep going up taking other min or max values among the siblings' values
+    // - last step should give you the best move; return it
+	float MiniMax(map<int, Cell*>& in_board, int32 Depth, bool IsWhitePlayer, float Alpha, float Beta, int32& selected_from_key, int32& selected_to_key);
+
 	Board* ActiveBoard = nullptr;
 };
 

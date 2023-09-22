@@ -1,5 +1,4 @@
 #include "HexaGameState.h"
-#include "Hexachess/Chess/ChessEngine.h"
 
 
 AHexaGameState::AHexaGameState() : Super()
@@ -124,32 +123,137 @@ TArray<FIntPoint> AHexaGameState::MakeAIMove(bool IsWhiteAI, EAIType AIType)
     switch(AIType)
     {
         case EAIType::Random:
-        {
-            list<int> PieceKeys = ActiveBoard->get_piece_keys(IsWhiteAI ? Cell::PieceColor::white : Cell::PieceColor::black);
-            list<int> PieceKeysWithValidMoves;
-
-            bool foundValidMove = false;
-            while (!foundValidMove) {
-                int RandomIndex = FMath::RandRange(0, PieceKeys.size() - 1);
-                int RandomPieceKey = *std::next(PieceKeys.begin(), RandomIndex);
-                auto PieceMoves = ActiveBoard->get_valid_moves(RandomPieceKey);
-                if (PieceMoves.size() > 0)
-                {
-                    foundValidMove = true;
-                    int RandomMoveIndex = FMath::RandRange(0, PieceMoves.size() - 1);
-                    int RandomMoveKey = *std::next(PieceMoves.begin(), RandomMoveIndex);
-                    Position FromPosition = ActiveBoard->to_position(RandomPieceKey);
-                    Position ToPosition = ActiveBoard->to_position(RandomMoveKey);
-
-                    // ActiveBoard->move_piece(FromPosition, ToPosition);
-
-                    Result.Add(FIntPoint{FromPosition.x, FromPosition.y});
-                    Result.Add(FIntPoint{ToPosition.x, ToPosition.y});
-                }
-            }
+            Result = CalculateRandomAIMove(IsWhiteAI);
             break;
+        case EAIType::Copycat:
+            Result = CalculateCopycatAIMove(IsWhiteAI);
+            break;
+        case EAIType::MinMax:
+            Result = CalculateMinMaxAIMove(IsWhiteAI);
+            break;
+    }
+
+    return Result;
+}
+
+TArray<FIntPoint> AHexaGameState::CalculateRandomAIMove(bool IsWhiteAI)
+{
+    TArray<FIntPoint> Result;
+
+    list<int> PieceKeys = ActiveBoard->get_piece_keys(IsWhiteAI ? Cell::PieceColor::white : Cell::PieceColor::black);
+    list<int> PieceKeysWithValidMoves;
+
+    bool foundValidMove = false;
+    while (!foundValidMove) {
+        int RandomIndex = FMath::RandRange(0, PieceKeys.size() - 1);
+        int RandomPieceKey = *std::next(PieceKeys.begin(), RandomIndex);
+        auto PieceMoves = ActiveBoard->get_valid_moves(RandomPieceKey);
+        if (PieceMoves.size() > 0)
+        {
+            foundValidMove = true;
+            int RandomMoveIndex = FMath::RandRange(0, PieceMoves.size() - 1);
+            int RandomMoveKey = *std::next(PieceMoves.begin(), RandomMoveIndex);
+            Position FromPosition = ActiveBoard->to_position(RandomPieceKey);
+            Position ToPosition = ActiveBoard->to_position(RandomMoveKey);
+
+            // ActiveBoard->move_piece(FromPosition, ToPosition);
+
+            Result.Add(FIntPoint{FromPosition.x, FromPosition.y});
+            Result.Add(FIntPoint{ToPosition.x, ToPosition.y});
         }
     }
 
     return Result;
+}
+
+TArray<FIntPoint> AHexaGameState::CalculateCopycatAIMove(bool IsWhiteAI)
+{
+    TArray<FIntPoint> Result;
+    return Result;
+}
+
+TArray<FIntPoint> AHexaGameState::CalculateMinMaxAIMove(bool IsWhiteAI)
+{
+    TArray<FIntPoint> Result;
+
+    int32 selected_from_key = -1;
+    int32 selected_to_key = -1;
+
+    map<int, Cell*> board = ActiveBoard->board_map;
+    MiniMax(board, 3, IsWhiteAI, -9000.f, 9000.f, selected_from_key, selected_to_key);
+
+    Position FromPosition = ActiveBoard->to_position(selected_from_key);
+    Position ToPosition = ActiveBoard->to_position(selected_to_key);
+
+    Result.Add(FIntPoint{FromPosition.x, FromPosition.y});
+    Result.Add(FIntPoint{ToPosition.x, ToPosition.y});
+
+    return Result;
+}
+
+float AHexaGameState::MiniMax(map<int, Cell*>& in_board, int32 Depth, bool IsWhitePlayer, float Alpha, float Beta, int32& selected_from_key, int32& selected_to_key)
+{
+    if (Depth == 0)
+    {
+        return ActiveBoard->evaluate(in_board);
+    }
+
+    if (IsWhitePlayer)
+    {
+        float MaxEval = -9000.f;
+        list<int> PieceKeys = ActiveBoard->get_piece_keys(in_board, Cell::PieceColor::white);
+        for (int piece : PieceKeys) {
+            list<int> MoveKeys = ActiveBoard->get_valid_moves(in_board, piece);
+            for (int move : MoveKeys) {
+                auto board_copy = ActiveBoard->copy_board_map(in_board);
+                Position start = ActiveBoard->to_position(piece);
+                Position goal = ActiveBoard->to_position(move);
+                ActiveBoard->move_piece(board_copy, start, goal);
+                float Eval = MiniMax(board_copy, Depth - 1, false, Alpha, Beta, selected_from_key, selected_to_key);
+
+                if (Eval > MaxEval)
+                {
+                    selected_from_key = piece;
+                    selected_to_key = move;
+                }
+                MaxEval = FMath::Max(MaxEval, Eval);
+                Alpha = FMath::Max(Alpha, Eval);
+                if (Beta <= Alpha)
+                {
+                    break;
+                }
+            }
+        }
+        return MaxEval;
+    }
+    else
+    {
+        float MinEval = 9000.f;
+        list<int> PieceKeys = ActiveBoard->get_piece_keys(in_board, Cell::PieceColor::black);
+        for (int piece : PieceKeys) {
+            list<int> MoveKeys = ActiveBoard->get_valid_moves(in_board, piece);
+            for (int move : MoveKeys) {
+                auto board_copy = ActiveBoard->copy_board_map(in_board);
+                Position start = ActiveBoard->to_position(piece);
+                Position goal = ActiveBoard->to_position(move);
+                ActiveBoard->move_piece(board_copy, start, goal);
+                float Eval = MiniMax(board_copy, Depth - 1, true, Alpha, Beta, selected_from_key, selected_to_key);
+
+                if (Eval < MinEval)
+                {
+                    selected_from_key = piece;
+                    selected_to_key = move;
+                }
+                MinEval = FMath::Min(MinEval, Eval);
+                Beta = FMath::Min(Beta, Eval);
+                if (Beta <= Alpha)
+                {
+                    break;
+                }
+            }
+        }
+        return MinEval;
+    }
+
+    return 0.f;
 }
