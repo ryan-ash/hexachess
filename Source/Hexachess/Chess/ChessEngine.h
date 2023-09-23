@@ -514,6 +514,8 @@ private:
         add_if_valid(in_board, l, move_diagonally_top_left(key), cell, true);
         add_if_valid(in_board, l, move_diagonally_bottom_right(key), cell, true);
         add_if_valid(in_board, l, move_diagonally_bottom_left(key), cell, true);
+        add_if_valid(in_board, l, move_diagonally_right(key), cell, true);
+        add_if_valid(in_board, l, move_diagonally_left(key), cell, true);
     }
 
     void add_valid_moves(map<int32, Cell*>& in_board, list<int32>& l, const int32 key, TMoveFn fns[], int32 fns_count, Cell* cell) {
