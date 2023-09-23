@@ -306,31 +306,31 @@ class Board {
         // check is severely punished
         for (auto piece_key : white_pieces)
         {
-            // if (in_board[piece_key]->get_piece_type() == Cell::PieceType::king)
-            // {
-            //     if (can_be_captured(in_board, piece_key))
-            //     {
-            //         score -= piece_values[Cell::PieceType::king];
-            //     }
-            // }
-            // else
-            // {
+            if (in_board[piece_key]->get_piece_type() == Cell::PieceType::king)
+            {
+                if (can_be_captured(in_board, piece_key))
+                {
+                    score -= piece_values[Cell::PieceType::king];
+                }
+            }
+            else
+            {
                 score += piece_values[in_board[piece_key]->get_piece_type()];
-            // }
+            }
         }
         for (auto piece_key : black_pieces)
         {
-            // if (in_board[piece_key]->get_piece_type() == Cell::PieceType::king)
-            // {
-            //     if (can_be_captured(in_board, piece_key))
-            //     {
-            //         score += piece_values[Cell::PieceType::king];
-            //     }
-            // }
-            // else
-            // {
+            if (in_board[piece_key]->get_piece_type() == Cell::PieceType::king)
+            {
+                if (can_be_captured(in_board, piece_key))
+                {
+                    score += piece_values[Cell::PieceType::king];
+                }
+            }
+            else
+            {
                 score -= piece_values[in_board[piece_key]->get_piece_type()];
-            // }
+            }
         }
 
         return score;
