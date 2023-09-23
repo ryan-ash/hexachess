@@ -17,6 +17,9 @@ class APieceBase : public AActor
 
 public:
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Components)
+    UStaticMeshComponent* Mesh = nullptr;
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Config")
     EPieceType Type = EPieceType::Pawn;
 
@@ -28,9 +31,6 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Config")
     int32 GridY = 0;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Config")
-    UStaticMeshComponent* Mesh = nullptr;
 
     UFUNCTION(BlueprintCallable)
     virtual void Move(int32 NewGridX, int32 NewGridY) {}
