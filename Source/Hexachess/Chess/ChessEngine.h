@@ -13,9 +13,9 @@ using namespace std;
 struct Position {
 
     Position() {}
-    Position(int x, int y): x(x), y(y) {}
+    Position(int32 x, int32 y): x(x), y(y) {}
 
-    int x, y;
+    int32 x, y;
 };
 
 class Cell {
@@ -96,31 +96,31 @@ class Cell {
 class Board {
     public:
 
-    map<Cell::PieceType, float> piece_values = {
-        {Cell::PieceType::pawn, 1.0f},
-        {Cell::PieceType::knight, 3.0f},
-        {Cell::PieceType::bishop, 3.0f},
-        {Cell::PieceType::rook, 5.0f},
-        {Cell::PieceType::queen, 9.0f},
-        {Cell::PieceType::king, 100.0f}
+    map<Cell::PieceType, int32> piece_values = {
+        {Cell::PieceType::pawn, 1},
+        {Cell::PieceType::knight, 3},
+        {Cell::PieceType::bishop, 3},
+        {Cell::PieceType::rook, 5},
+        {Cell::PieceType::queen, 9},
+        {Cell::PieceType::king, 100}
     };
 
     Board() {
-        for (int x = 0; x <= max; x++) {
-            int y_max = median + x;
+        for (int32 x = 0; x <= max; x++) {
+            int32 y_max = median + x;
             if (y_max > max) {
                 y_max = max - y_max % max;
             }
-            for (int y = 0; y <= y_max; y++) {
-                int pos = to_position_key(x, y);
+            for (int32 y = 0; y <= y_max; y++) {
+                int32 pos = to_position_key(x, y);
                 Cell* cell = new Cell();
                 board_map[pos] = cell;
             }
         }
     }
 
-    bool is_valid_position(int x, int y) {
-        int pos = to_position_key(x, y);
+    bool is_valid_position(int32 x, int32 y) {
+        int32 pos = to_position_key(x, y);
         return is_valid_position(pos);
     }
 
@@ -128,20 +128,20 @@ class Board {
         auto key = to_position_key(pos);
         auto moves = get_valid_moves(key);
         list<Position> pos_list = {};
-        for (const int k : moves) {
+        for (const int32 k : moves) {
             Position p = this->to_position(k);
             pos_list.push_front(p);
         }
         return pos_list;
     }
 
-    list<int> get_valid_moves(int key) {
+    list<int32> get_valid_moves(int32 key) {
         return get_valid_moves(board_map, key);
     }
 
-    list<int> get_valid_moves(map<int, Cell*>& in_board, int key, bool skip_filter = false) {
+    list<int32> get_valid_moves(map<int32, Cell*>& in_board, int32 key, bool skip_filter = false) {
         Cell* cell = in_board[key];
-        list<int> l = {};
+        list<int32> l = {};
         switch (cell->get_piece_type()) {
             case Cell::PieceType::none:
                 break;
@@ -165,9 +165,9 @@ class Board {
                 break;
         }
 
-        list<int> filtered_list = {};
+        list<int32> filtered_list = {};
         auto color_pieces = get_piece_keys(cell->get_piece_color());
-        int king_key = -1;
+        int32 king_key = -1;
         for (auto piece_key : color_pieces) {
             if (in_board[piece_key]->get_piece_type() == Cell::PieceType::king) {
                 king_key = piece_key;
@@ -177,7 +177,7 @@ class Board {
         if (skip_filter || king_key == -1) {
             return l;
         }
-        for (int k : l) {
+        for (int32 k : l) {
             auto board_copy = copy_board_map();
             Position start = to_position(key);
             Position goal = to_position(k);
@@ -196,12 +196,12 @@ class Board {
         return filtered_list;
     }
 
-    list<int> get_piece_keys(Cell::PieceColor pc) {
+    list<int32> get_piece_keys(Cell::PieceColor pc) {
         return get_piece_keys(board_map, pc);
     }
 
-    list<int> get_piece_keys(map<int, Cell*>& in_board, Cell::PieceColor pc) {
-        list<int> l = {};
+    list<int32> get_piece_keys(map<int32, Cell*>& in_board, Cell::PieceColor pc) {
+        list<int32> l = {};
         for(const auto& [key, cell] : in_board) {
             if (cell->get_piece_color() == pc) {
                 l.push_front(key);
@@ -210,16 +210,16 @@ class Board {
         return l;
     }
 
-    list<int> get_all_piece_move_keys(Cell::PieceColor pc, bool skip_filter = false) {
+    list<int32> get_all_piece_move_keys(Cell::PieceColor pc, bool skip_filter = false) {
         return get_all_piece_move_keys(board_map, pc, skip_filter);
     }
 
-    list<int> get_possible_move_sources(int target, Cell::PieceColor pc) {
+    list<int32> get_possible_move_sources(int32 target, Cell::PieceColor pc) {
         return get_possible_move_sources(board_map, target, pc);
     }
 
-    list<int> get_possible_move_sources(map<int, Cell*>& in_board, int target, Cell::PieceColor pc) {
-        list<int> l = {};
+    list<int32> get_possible_move_sources(map<int32, Cell*>& in_board, int32 target, Cell::PieceColor pc) {
+        list<int32> l = {};
         auto all_moves = get_all_piece_move_keys(in_board, pc, true);
         for (auto move : all_moves) {
             auto moves = get_valid_moves(in_board, move, true);
@@ -231,7 +231,7 @@ class Board {
         return l;
     }
 
-    Position to_position(int key) {
+    Position to_position(int32 key) {
         Position pos = Position{get_x(key), get_y(key)};
         return pos;
     }
@@ -240,7 +240,7 @@ class Board {
         return are_there_valid_moves(board_map, pc);
     }
 
-    bool are_there_valid_moves(map<int, Cell*>& in_board, Cell::PieceColor pc) {
+    bool are_there_valid_moves(map<int32, Cell*>& in_board, Cell::PieceColor pc) {
         auto all_moves = get_all_piece_move_keys(in_board, pc);
         return all_moves.size() > 0;
     }
@@ -249,14 +249,14 @@ class Board {
         return move_piece(board_map, start, goal);
     }
 
-    bool move_piece(map<int, Cell*>& in_board, Position& start, Position& goal) {
+    bool move_piece(map<int32, Cell*>& in_board, Position& start, Position& goal) {
         bool is_main_board = &in_board == &board_map;
 
         #if WITH_EDITOR
         UE_LOG(LogChessEngine, Log, TEXT("%s: Move piece from (%d, %d) to (%d, %d)"), is_main_board ? TEXT("MAIN") : TEXT("INNER"), start.x, start.y, goal.x, goal.y);
         #endif
 
-        int sp = to_position_key(start);
+        int32 sp = to_position_key(start);
         if (is_valid_position(in_board, sp) && is_valid_position(in_board, goal)) {
             Cell::PieceType pt = in_board[sp]->get_piece_type();
             Cell::PieceColor pc = in_board[sp]->get_piece_color();
@@ -270,8 +270,8 @@ class Board {
         return set_piece(board_map, pos, pt, pc);
     }
 
-    bool set_piece(map<int, Cell*>& in_board, Position& pos, Cell::PieceType pt, Cell::PieceColor pc) {
-        int key = to_position_key(pos);
+    bool set_piece(map<int32, Cell*>& in_board, Position& pos, Cell::PieceType pt, Cell::PieceColor pc) {
+        int32 key = to_position_key(pos);
         if (!is_valid_position(in_board, key)) {
             return false;
         }
@@ -283,19 +283,19 @@ class Board {
         return can_be_captured(board_map, pos);
     }
 
-    bool can_be_captured(map<int, Cell*>& in_board, Position& pos) {
-        int key = to_position_key(pos);
+    bool can_be_captured(map<int32, Cell*>& in_board, Position& pos) {
+        int32 key = to_position_key(pos);
         return can_be_captured(in_board, key);
     }
 
-    float evaluate() {
+    int32 evaluate() {
         return evaluate(board_map);
     }
 
-    float evaluate(map<int, Cell*>& in_board)
+    int32 evaluate(map<int32, Cell*>& in_board)
     {
         // set up some scoring for figures
-        float score = 0;
+        int32 score = 0;
 
         // get all pieces
         auto white_pieces = get_piece_keys(in_board, Cell::PieceColor::white);
@@ -306,86 +306,86 @@ class Board {
         // check is severely punished
         for (auto piece_key : white_pieces)
         {
-            if (in_board[piece_key]->get_piece_type() == Cell::PieceType::king)
-            {
-                if (can_be_captured(in_board, piece_key))
-                {
-                    score -= piece_values[Cell::PieceType::king];
-                }
-            }
-            else
-            {
+            // if (in_board[piece_key]->get_piece_type() == Cell::PieceType::king)
+            // {
+            //     if (can_be_captured(in_board, piece_key))
+            //     {
+            //         score -= piece_values[Cell::PieceType::king];
+            //     }
+            // }
+            // else
+            // {
                 score += piece_values[in_board[piece_key]->get_piece_type()];
-            }
+            // }
         }
         for (auto piece_key : black_pieces)
         {
-            if (in_board[piece_key]->get_piece_type() == Cell::PieceType::king)
-            {
-                if (can_be_captured(in_board, piece_key))
-                {
-                    score += piece_values[Cell::PieceType::king];
-                }
-            }
-            else
-            {
+            // if (in_board[piece_key]->get_piece_type() == Cell::PieceType::king)
+            // {
+            //     if (can_be_captured(in_board, piece_key))
+            //     {
+            //         score += piece_values[Cell::PieceType::king];
+            //     }
+            // }
+            // else
+            // {
                 score -= piece_values[in_board[piece_key]->get_piece_type()];
-            }
+            // }
         }
 
         return score;
     }
 
-    map<int, Cell*> copy_board_map() {
-        map<int, Cell*> board_map_copy = {};
+    map<int32, Cell*> copy_board_map() {
+        map<int32, Cell*> board_map_copy = {};
         for (const auto& [key, cell] : this->board_map) {
             board_map_copy[key] = new Cell(*cell);
         }
         return board_map_copy;
     }
 
-    map<int, Cell*> copy_board_map(map<int, Cell*>& in_board) {
-        map<int, Cell*> board_map_copy = {};
+    map<int32, Cell*> copy_board_map(map<int32, Cell*>& in_board) {
+        map<int32, Cell*> board_map_copy = {};
         for (const auto& [key, cell] : in_board) {
             board_map_copy[key] = new Cell(*cell);
         }
         return board_map_copy;
     }
 
-    void clear_board_map(std::map<int, Cell*>& in_board) {
+    void clear_board_map(std::map<int32, Cell*>& in_board) {
         for (auto& pair : in_board) {
             delete pair.second;  // Deletes the pointer
         }
         in_board.clear();  // Clears the map
     }
 
-    map<int, Cell*> board_map;
+    map<int32, Cell*> board_map;
 
 
 
 private:
 
-    using TMoveFn = int (*)(const int);
+    using TMoveFn = int32 (*)(const int32);
 
-    static const int median = 5;
-    static const int max = 10;
-    static const int step_x = 1 << 8;
-    const vector<int> white_pawn_cell_keys = {256, 513, 770, 1027, 1284, 1539, 1794, 2049, 2304};
-    const vector<int> black_pawn_cell_keys = {262, 518, 774, 1030, 1286, 1542, 1798, 2054, 2310};
+    static const int32 median = 5;
+    static const int32 max = 10;
+    static const int32 step_x = 1 << 8;
+    const vector<int32> white_pawn_cell_keys = {256, 513, 770, 1027, 1284, 1539, 1794, 2049, 2304};
+    const vector<int32> black_pawn_cell_keys = {262, 518, 774, 1030, 1286, 1542, 1798, 2054, 2310};
 
-    inline int to_position_key(int x, int y) {
+    inline int32 to_position_key(int32 x, int32 y) {
         return (x << 8) + y;
     }
 
-    inline int to_position_key(Position pos) {
+    inline int32 to_position_key(Position pos) {
         return to_position_key(pos.x, pos.y);
     }
 
-    inline bool is_valid_position(int key) {
+    inline bool is_valid_position(int32 key) {
         return is_valid_position(board_map, key);
     }
 
-    inline bool is_valid_position(map<int, Cell*>& in_board, int key) {
+    inline bool is_valid_position(map<int32, Cell*>& in_board, int32 key) {
         return in_board.find(key) != in_board.end();
     }
 
@@ -393,11 +393,11 @@ private:
         return is_valid_position(board_map, pos);
     }
 
-    inline bool is_valid_position(map<int, Cell*>& in_board, Position& pos) {
+    inline bool is_valid_position(map<int32, Cell*>& in_board, Position& pos) {
         return is_valid_position(in_board, to_position_key(pos));
     }
 
-    void add_pawn_moves(map<int, Cell*>& in_board, list<int>& l, int key, Cell* cell) {
+    void add_pawn_moves(map<int32, Cell*>& in_board, list<int32>& l, int32 key, Cell* cell) {
         TMoveFn fn_move, fn_take_1, fn_take_2;
         switch (cell->get_piece_color()) {
             case Cell::PieceColor::white:
@@ -413,27 +413,27 @@ private:
             default:
                 return;
         }
-        int move = fn_move(key);
+        int32 move = fn_move(key);
         if (is_valid_position(in_board, move)) {
             add_if_valid(in_board, l, move, cell, false);
             if (!in_board[move]->has_piece() && is_initial_pawn_cell(key, cell)) {
                 add_if_valid(in_board, l, fn_move(move), cell, false);
             }
         }
-        int take = fn_take_1(key);
+        int32 take = fn_take_1(key);
         add_pawn_take_if_valid(in_board, l, take, cell);
         take = fn_take_2(key);
         add_pawn_take_if_valid(in_board, l, take, cell);
     }
 
-    void add_pawn_take_if_valid(map<int, Cell*>& in_board, list<int>& l, int key, Cell* cell) {
+    void add_pawn_take_if_valid(map<int32, Cell*>& in_board, list<int32>& l, int32 key, Cell* cell) {
         if (is_valid_position(in_board, key) && in_board[key]->has_piece_of_opposite_color(cell)) {
             l.push_front(key);
         }
     }
 
-    bool is_initial_pawn_cell(const int key, Cell* cell) {
-        const vector<int>* cell_keys;
+    bool is_initial_pawn_cell(const int32 key, Cell* cell) {
+        const vector<int32>* cell_keys;
         switch (cell->get_piece_color()) {
             case Cell::PieceColor::white:
                 cell_keys = &white_pawn_cell_keys;
@@ -449,7 +449,7 @@ private:
         return k != arr_end;
     }
 
-    void add_bishop_moves(map<int, Cell*>& in_board, list<int>& l, int key, Cell* cell) {
+    void add_bishop_moves(map<int32, Cell*>& in_board, list<int32>& l, int32 key, Cell* cell) {
         TMoveFn fns[6] = { &move_diagonally_top_right
                          , &move_diagonally_top_left
                          , &move_diagonally_bottom_right
@@ -460,8 +460,8 @@ private:
         add_valid_moves(in_board, l, key, fns, 6, cell);
     }
 
-    void add_knight_moves(map<int, Cell*>& in_board, list<int>& l, int key, Cell* cell) {
-        int pos;
+    void add_knight_moves(map<int32, Cell*>& in_board, list<int32>& l, int32 key, Cell* cell) {
+        int32 pos;
         pos = move_vertically_up(move_vertically_up(key));
         add_if_valid(in_board, l, move_horizontally_top_right(pos), cell, true);
         add_if_valid(in_board, l, move_horizontally_top_left(pos), cell, true);
@@ -487,7 +487,7 @@ private:
         add_if_valid(in_board, l, move_horizontally_bottom_left(pos), cell, true);
     }
 
-    void add_rook_moves(map<int, Cell*>& in_board, list<int>& l, int key, Cell* cell) {
+    void add_rook_moves(map<int32, Cell*>& in_board, list<int32>& l, int32 key, Cell* cell) {
         TMoveFn fns[6] = { &move_horizontally_top_right
                          , &move_horizontally_top_left
                          , &move_horizontally_bottom_right
@@ -498,12 +498,12 @@ private:
         add_valid_moves(in_board, l, key, fns, 6, cell);
     }
 
-    void add_queen_moves(map<int, Cell*>& in_board, list<int>& l, int key, Cell* cell) {
+    void add_queen_moves(map<int32, Cell*>& in_board, list<int32>& l, int32 key, Cell* cell) {
         add_bishop_moves(in_board, l, key, cell);
         add_rook_moves(in_board, l, key, cell);
     }
 
-    void add_king_moves(map<int, Cell*>& in_board, list<int>& l, int key, Cell* cell) {
+    void add_king_moves(map<int32, Cell*>& in_board, list<int32>& l, int32 key, Cell* cell) {
         add_if_valid(in_board, l, move_vertically_up(key), cell, true);
         add_if_valid(in_board, l, move_vertically_down(key), cell, true);
         add_if_valid(in_board, l, move_horizontally_top_right(key), cell, true);
@@ -516,9 +516,9 @@ private:
         add_if_valid(in_board, l, move_diagonally_bottom_left(key), cell, true);
     }
 
-    void add_valid_moves(map<int, Cell*>& in_board, list<int>& l, const int key, TMoveFn fns[], int fns_count, Cell* cell) {
-        int current_pos;
-        for (int i = 0; i < fns_count; i++) {
+    void add_valid_moves(map<int32, Cell*>& in_board, list<int32>& l, const int32 key, TMoveFn fns[], int32 fns_count, Cell* cell) {
+        int32 current_pos;
+        for (int32 i = 0; i < fns_count; i++) {
             TMoveFn fn = fns[i];
             current_pos = fn(key);
             while (is_valid_position(in_board, current_pos)) {
@@ -541,7 +541,7 @@ private:
         }
     }
 
-    inline void add_if_valid(map<int, Cell*>& in_board, list<int>& l, int key, Cell* cell, bool can_take) {
+    inline void add_if_valid(map<int32, Cell*>& in_board, list<int32>& l, int32 key, Cell* cell, bool can_take) {
         if (is_valid_position(in_board, key)) {
             Cell* c = in_board[key];
             if (c->has_piece()) {
@@ -554,15 +554,15 @@ private:
         }
     }
 
-    static inline int move_vertically_up(const int key) {
+    static inline int32 move_vertically_up(const int32 key) {
         return key + 1; // x, y+1
     }
 
-    static inline int move_vertically_down(const int key) {
+    static inline int32 move_vertically_down(const int32 key) {
         return key - 1; // x, y-1
     }
 
-    static int move_horizontally_top_right(const int key) {
+    static int32 move_horizontally_top_right(const int32 key) {
         if (get_x(key) < median) {
             return key + step_x + 1; // x+1, y+1
         } else {
@@ -570,7 +570,7 @@ private:
         }
     }
 
-    static int move_horizontally_top_left(const int key) {
+    static int32 move_horizontally_top_left(const int32 key) {
         if (get_x(key) > median) {
             return key - step_x + 1; // x-1, y+1
         } else {
@@ -578,7 +578,7 @@ private:
         }
     }
 
-    static int move_horizontally_bottom_right(const int key) {
+    static int32 move_horizontally_bottom_right(const int32 key) {
         if (get_x(key) < median) {
             return key + step_x; // x+1, y
         } else {
@@ -586,7 +586,7 @@ private:
         }
     }
 
-    static int move_horizontally_bottom_left(const int key) {
+    static int32 move_horizontally_bottom_left(const int32 key) {
         if (get_x(key) > median) {
             return key - step_x; // x-1, y
         } else {
@@ -594,7 +594,7 @@ private:
         }
     }
 
-    static int move_diagonally_top_right(const int key) {
+    static int32 move_diagonally_top_right(const int32 key) {
         if (get_x(key) < median) {
             return key + step_x + 2; // x+1, y+2
         } else {
@@ -602,7 +602,7 @@ private:
         }
     }
 
-    static int move_diagonally_top_left(const int key) {
+    static int32 move_diagonally_top_left(const int32 key) {
         if (get_x(key) > median) {
             return key - step_x + 2; // x-1, y+2
         } else {
@@ -610,7 +610,7 @@ private:
         }
     }
 
-    static int move_diagonally_bottom_right(const int key) {
+    static int32 move_diagonally_bottom_right(const int32 key) {
         if (get_x(key) < median) {
             return key + step_x - 1; // x+1, y-1
         } else {
@@ -618,7 +618,7 @@ private:
         }
     }
 
-    static int move_diagonally_bottom_left(const int key) {
+    static int32 move_diagonally_bottom_left(const int32 key) {
         if (get_x(key) > median) {
             return key - step_x - 1; // x-1, y-1
         } else {
@@ -626,8 +626,8 @@ private:
         }
     }
 
-    static int move_diagonally_right(const int key) {
-        int x = get_x(key);
+    static int32 move_diagonally_right(const int32 key) {
+        int32 x = get_x(key);
         if (x % 2 == 0) {
             if (x == median - 1) {
                 return key + step_x*2; // x+2, y
@@ -645,8 +645,8 @@ private:
         }
     }
 
-    static int move_diagonally_left(const int key) {
-        int x = get_x(key);
+    static int32 move_diagonally_left(const int32 key) {
+        int32 x = get_x(key);
         if (x % 2 == 0) {
             if (x == median + 1) {
                 return key - step_x*2; // x-2, y
@@ -664,33 +664,33 @@ private:
         }
     }
 
-    static int ping(const int key) {
+    static int32 ping(const int32 key) {
         return key;
     }
 
-    static inline int get_x(const int key) {
+    static inline int32 get_x(const int32 key) {
         return key >> 8;
     }
 
-    static inline int get_y(const int key) {
+    static inline int32 get_y(const int32 key) {
         return key & 0xFF;
     }
 
-    list<int> get_all_piece_move_keys(map<int, Cell*>& in_board, Cell::PieceColor pc, bool skip_filter = false) {
-        list<int> all_moves = {};
+    list<int32> get_all_piece_move_keys(map<int32, Cell*>& in_board, Cell::PieceColor pc, bool skip_filter = false) {
+        list<int32> all_moves = {};
         auto all_piece_keys = get_piece_keys(in_board, pc);
-        for (int key : all_piece_keys) {
+        for (int32 key : all_piece_keys) {
             auto moves = get_valid_moves(in_board, key, skip_filter);
             all_moves.insert(all_moves.end(), moves.begin(), moves.end());
         }
         return all_moves;
     }
 
-    bool can_be_captured(const int key) {
+    bool can_be_captured(const int32 key) {
         return can_be_captured(board_map, key);
     }
 
-    bool can_be_captured(map<int, Cell*>& in_board, const int key) {
+    bool can_be_captured(map<int32, Cell*>& in_board, const int32 key) {
         Cell::PieceColor pc = in_board[key]->get_opposite_color();
         auto all_moves = get_all_piece_move_keys(in_board, pc, true);
         auto k = find(begin(all_moves), end(all_moves), key);

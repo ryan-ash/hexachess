@@ -52,7 +52,7 @@ FString AHexConnection::IpToHex(const FString& Ip, const FString& Key)
 	Ip.ParseIntoArray(Octets, TEXT("."), true);
     
 	FString HexValue;
-	for (int i = 0; i < Octets.Num(); ++i)
+	for (int32 i = 0; i < Octets.Num(); ++i)
 	{
 		int32 Octet = FCString::Atoi(*Octets[i]);
 		int32 KeyByte = Key.IsValidIndex(i) ? (uint8)Key[i] : 0;
@@ -65,7 +65,7 @@ FString AHexConnection::IpToHex(const FString& Ip, const FString& Key)
 FString AHexConnection::HexToIp(const FString& HexValue, const FString& Key)
 {
 	FString Ip;
-	for (int i = 0; i < HexValue.Len(); i += 2)
+	for (int32 i = 0; i < HexValue.Len(); i += 2)
 	{
 		FString HexOctet = HexValue.Mid(i, 2);
 		int32 Octet;

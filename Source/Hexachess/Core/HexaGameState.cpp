@@ -105,7 +105,7 @@ TArray<FIntPoint> AHexaGameState::GetValidMovesForPlayer(bool IsWhitePlayer)
 {
     TArray<FIntPoint> Result;
 
-    list<int> MoveKeys = ActiveBoard->get_all_piece_move_keys(IsWhitePlayer ? Cell::PieceColor::white : Cell::PieceColor::black);
+    list<int32> MoveKeys = ActiveBoard->get_all_piece_move_keys(IsWhitePlayer ? Cell::PieceColor::white : Cell::PieceColor::black);
     for (const auto& Move : MoveKeys)
     {
         Position MovePosition = ActiveBoard->to_position(Move);
@@ -140,19 +140,19 @@ TArray<FIntPoint> AHexaGameState::CalculateRandomAIMove(bool IsWhiteAI)
 {
     TArray<FIntPoint> Result;
 
-    list<int> PieceKeys = ActiveBoard->get_piece_keys(IsWhiteAI ? Cell::PieceColor::white : Cell::PieceColor::black);
-    list<int> PieceKeysWithValidMoves;
+    list<int32> PieceKeys = ActiveBoard->get_piece_keys(IsWhiteAI ? Cell::PieceColor::white : Cell::PieceColor::black);
+    list<int32> PieceKeysWithValidMoves;
 
     bool foundValidMove = false;
     while (!foundValidMove) {
-        int RandomIndex = FMath::RandRange(0, PieceKeys.size() - 1);
-        int RandomPieceKey = *std::next(PieceKeys.begin(), RandomIndex);
+        int32 RandomIndex = FMath::RandRange(0, PieceKeys.size() - 1);
+        int32 RandomPieceKey = *std::next(PieceKeys.begin(), RandomIndex);
         auto PieceMoves = ActiveBoard->get_valid_moves(RandomPieceKey);
         if (PieceMoves.size() > 0)
         {
             foundValidMove = true;
-            int RandomMoveIndex = FMath::RandRange(0, PieceMoves.size() - 1);
-            int RandomMoveKey = *std::next(PieceMoves.begin(), RandomMoveIndex);
+            int32 RandomMoveIndex = FMath::RandRange(0, PieceMoves.size() - 1);
+            int32 RandomMoveKey = *std::next(PieceMoves.begin(), RandomMoveIndex);
             Position FromPosition = ActiveBoard->to_position(RandomPieceKey);
             Position ToPosition = ActiveBoard->to_position(RandomMoveKey);
 
@@ -179,7 +179,7 @@ TArray<FIntPoint> AHexaGameState::CalculateMinMaxAIMove(bool IsWhiteAI)
     int32 selected_from_key = -1;
     int32 selected_to_key = -1;
 
-    map<int, Cell*> board = ActiveBoard->board_map;
+    map<int32, Cell*> board = ActiveBoard->board_map;
     MiniMax(board, 3, IsWhiteAI, -9000.f, 9000.f, selected_from_key, selected_to_key);
 
     Position FromPosition = ActiveBoard->to_position(selected_from_key);
@@ -191,7 +191,7 @@ TArray<FIntPoint> AHexaGameState::CalculateMinMaxAIMove(bool IsWhiteAI)
     return Result;
 }
 
-float AHexaGameState::MiniMax(map<int, Cell*>& in_board, int32 Depth, bool IsWhitePlayer, float Alpha, float Beta, int32& selected_from_key, int32& selected_to_key)
+int32 AHexaGameState::MiniMax(map<int32, Cell*>& in_board, int32 Depth, bool IsWhitePlayer, int32 Alpha, int32 Beta, int32& selected_from_key, int32& selected_to_key)
 {
     if (Depth == 0)
     {
@@ -200,16 +200,16 @@ float AHexaGameState::MiniMax(map<int, Cell*>& in_board, int32 Depth, bool IsWhi
 
     if (IsWhitePlayer)
     {
-        float MaxEval = -9000.f;
-        list<int> PieceKeys = ActiveBoard->get_piece_keys(in_board, Cell::PieceColor::white);
-        for (int piece : PieceKeys) {
-            list<int> MoveKeys = ActiveBoard->get_valid_moves(in_board, piece);
-            for (int move : MoveKeys) {
+        int32 MaxEval = -9000;
+        list<int32> PieceKeys = ActiveBoard->get_piece_keys(in_board, Cell::PieceColor::white);
+        for (int32 piece : PieceKeys) {
+            list<int32> MoveKeys = ActiveBoard->get_valid_moves(in_board, piece);
+            for (int32 move : MoveKeys) {
                 auto board_copy = ActiveBoard->copy_board_map(in_board);
                 Position start = ActiveBoard->to_position(piece);
                 Position goal = ActiveBoard->to_position(move);
                 ActiveBoard->move_piece(board_copy, start, goal);
-                float Eval = MiniMax(board_copy, Depth - 1, false, Alpha, Beta, selected_from_key, selected_to_key);
+                int32 Eval = MiniMax(board_copy, Depth - 1, false, Alpha, Beta, selected_from_key, selected_to_key);
 
                 ActiveBoard->clear_board_map(board_copy);
                 if (Eval > MaxEval)
@@ -218,6 +218,8 @@ float AHexaGameState::MiniMax(map<int, Cell*>& in_board, int32 Depth, bool IsWhi
                     selected_to_key = move;
                 }
                 MaxEval = FMath::Max(MaxEval, Eval);
+
+                // pruning
                 Alpha = FMath::Max(Alpha, Eval);
                 if (Beta <= Alpha)
                 {
@@ -229,16 +231,16 @@ float AHexaGameState::MiniMax(map<int, Cell*>& in_board, int32 Depth, bool IsWhi
     }
     else
     {
-        float MinEval = 9000.f;
-        list<int> PieceKeys = ActiveBoard->get_piece_keys(in_board, Cell::PieceColor::black);
-        for (int piece : PieceKeys) {
-            list<int> MoveKeys = ActiveBoard->get_valid_moves(in_board, piece);
-            for (int move : MoveKeys) {
+        int32 MinEval = 9000;
+        list<int32> PieceKeys = ActiveBoard->get_piece_keys(in_board, Cell::PieceColor::black);
+        for (int32 piece : PieceKeys) {
+            list<int32> MoveKeys = ActiveBoard->get_valid_moves(in_board, piece);
+            for (int32 move : MoveKeys) {
                 auto board_copy = ActiveBoard->copy_board_map(in_board);
                 Position start = ActiveBoard->to_position(piece);
                 Position goal = ActiveBoard->to_position(move);
                 ActiveBoard->move_piece(board_copy, start, goal);
-                float Eval = MiniMax(board_copy, Depth - 1, true, Alpha, Beta, selected_from_key, selected_to_key);
+                int32 Eval = MiniMax(board_copy, Depth - 1, true, Alpha, Beta, selected_from_key, selected_to_key);
 
                 ActiveBoard->clear_board_map(board_copy);
                 if (Eval < MinEval)
@@ -247,6 +249,8 @@ float AHexaGameState::MiniMax(map<int, Cell*>& in_board, int32 Depth, bool IsWhi
                     selected_to_key = move;
                 }
                 MinEval = FMath::Min(MinEval, Eval);
+
+                // pruning
                 Beta = FMath::Min(Beta, Eval);
                 if (Beta <= Alpha)
                 {
@@ -257,5 +261,5 @@ float AHexaGameState::MiniMax(map<int, Cell*>& in_board, int32 Depth, bool IsWhi
         return MinEval;
     }
 
-    return 0.f;
+    return 0;
 }

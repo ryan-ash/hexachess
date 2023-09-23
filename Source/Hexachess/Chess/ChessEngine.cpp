@@ -1,7 +1,7 @@
 /*
 #include "ChessEngine.h"
 
-void print_moves(Board* b, int x, int y, Cell::PieceType pt, Cell::PieceColor pc, string piece_name) {
+void print_moves(Board* b, int32 x, int32 y, Cell::PieceType pt, Cell::PieceColor pc, string piece_name) {
     Position p = Position{x, y};
     b->set_piece(p, pt, pc);
     list<Position> lp = b->get_valid_moves(p);
@@ -12,7 +12,7 @@ void print_moves(Board* b, int x, int y, Cell::PieceType pt, Cell::PieceColor pc
     });
 }
 
-int main() {
+int32 main() {
     cout << "Start test" << endl;
 
     Board* b = new Board();

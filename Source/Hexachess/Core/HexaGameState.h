@@ -99,7 +99,7 @@ private:
     // - evaluate the board state for all bottom nodes (it's recursion exit point)
     // - keep going up taking other min or max values among the siblings' values
     // - last step should give you the best move; return it
-	float MiniMax(map<int, Cell*>& in_board, int32 Depth, bool IsWhitePlayer, float Alpha, float Beta, int32& selected_from_key, int32& selected_to_key);
+	int32 MiniMax(map<int32, Cell*>& in_board, int32 Depth, bool IsWhitePlayer, int32 Alpha, int32 Beta, int32& selected_from_key, int32& selected_to_key);
 
 	Board* ActiveBoard = nullptr;
 };
