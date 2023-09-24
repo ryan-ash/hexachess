@@ -1,6 +1,7 @@
 #pragma once
 
 #include <CoreMinimal.h>
+#include <GeometryCollection/GeometryCollectionActor.h>
 
 // it's weird this is required...
 #include "../Types/PieceType.h"
@@ -9,16 +10,13 @@
 
 
 UCLASS()
-class APieceBase : public AActor
+class APieceBase : public AGeometryCollectionActor
 {
     GENERATED_BODY()
 
     APieceBase();
 
 public:
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Components)
-    UStaticMeshComponent* Mesh = nullptr;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Config")
     EPieceType Type = EPieceType::Pawn;
