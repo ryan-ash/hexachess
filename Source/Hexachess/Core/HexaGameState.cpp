@@ -176,14 +176,11 @@ TArray<FIntPoint> AHexaGameState::CalculateMinMaxAIMove(bool IsWhiteAI)
 {
     TArray<FIntPoint> Result;
 
-    int32 selected_from_key = -1;
-    int32 selected_to_key = -1;
-
     map<int32, Cell*> board = ActiveBoard->board_map;
-    MiniMax(board, 3, IsWhiteAI, -9000.f, 9000.f, selected_from_key, selected_to_key);
+    MoveResult ai_result = MiniMax(board, 3, IsWhiteAI, -9000.f, 9000.f);
 
-    Position FromPosition = ActiveBoard->to_position(selected_from_key);
-    Position ToPosition = ActiveBoard->to_position(selected_to_key);
+    Position FromPosition = ActiveBoard->to_position(ai_result.FromKey);
+    Position ToPosition = ActiveBoard->to_position(ai_result.ToKey);
 
     Result.Add(FIntPoint{FromPosition.x, FromPosition.y});
     Result.Add(FIntPoint{ToPosition.x, ToPosition.y});
@@ -191,13 +188,14 @@ TArray<FIntPoint> AHexaGameState::CalculateMinMaxAIMove(bool IsWhiteAI)
     return Result;
 }
 
-int32 AHexaGameState::MiniMax(map<int32, Cell*>& in_board, int32 Depth, bool IsWhitePlayer, int32 Alpha, int32 Beta, int32& selected_from_key, int32& selected_to_key)
+MoveResult AHexaGameState::MiniMax(map<int32, Cell*>& in_board, int32 Depth, bool IsWhitePlayer, int32 Alpha, int32 Beta)
 {
     if (Depth == 0)
     {
-        return ActiveBoard->evaluate(in_board);
+        return MoveResult(0, 0, ActiveBoard->evaluate(in_board));
     }
 
+    MoveResult Result;
     if (IsWhitePlayer)
     {
         int32 MaxEval = -9000;
@@ -209,25 +207,25 @@ int32 AHexaGameState::MiniMax(map<int32, Cell*>& in_board, int32 Depth, bool IsW
                 Position start = ActiveBoard->to_position(piece);
                 Position goal = ActiveBoard->to_position(move);
                 ActiveBoard->move_piece(board_copy, start, goal);
-                int32 Eval = MiniMax(board_copy, Depth - 1, false, Alpha, Beta, selected_from_key, selected_to_key);
+                MoveResult child_result = MiniMax(board_copy, Depth - 1, false, Alpha, Beta);
 
                 ActiveBoard->clear_board_map(board_copy);
-                if (Eval > MaxEval)
+                if (child_result.Score > MaxEval)
                 {
-                    selected_from_key = piece;
-                    selected_to_key = move;
+                    Result.FromKey = piece;
+                    Result.ToKey = move;
                 }
-                MaxEval = FMath::Max(MaxEval, Eval);
+                MaxEval = FMath::Max(MaxEval, child_result.Score);
 
                 // pruning
-                Alpha = FMath::Max(Alpha, Eval);
+                Alpha = FMath::Max(Alpha, child_result.Score);
                 if (Beta <= Alpha)
                 {
                     break;
                 }
             }
         }
-        return MaxEval;
+        Result.Score = MaxEval;
     }
     else
     {
@@ -240,26 +238,26 @@ int32 AHexaGameState::MiniMax(map<int32, Cell*>& in_board, int32 Depth, bool IsW
                 Position start = ActiveBoard->to_position(piece);
                 Position goal = ActiveBoard->to_position(move);
                 ActiveBoard->move_piece(board_copy, start, goal);
-                int32 Eval = MiniMax(board_copy, Depth - 1, true, Alpha, Beta, selected_from_key, selected_to_key);
+                MoveResult child_result = MiniMax(board_copy, Depth - 1, true, Alpha, Beta);
 
                 ActiveBoard->clear_board_map(board_copy);
-                if (Eval < MinEval)
+                if (child_result.Score < MinEval)
                 {
-                    selected_from_key = piece;
-                    selected_to_key = move;
+                    Result.FromKey = piece;
+                    Result.ToKey = move;
                 }
-                MinEval = FMath::Min(MinEval, Eval);
+                MinEval = FMath::Min(MinEval, child_result.Score);
 
                 // pruning
-                Beta = FMath::Min(Beta, Eval);
+                Beta = FMath::Min(Beta, child_result.Score);
                 if (Beta <= Alpha)
                 {
                     break;
                 }
             }
         }
-        return MinEval;
+        Result.Score = MinEval;
     }
 
-    return 0;
+    return Result;
 }
