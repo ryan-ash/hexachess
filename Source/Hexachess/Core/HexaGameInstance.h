@@ -2,7 +2,7 @@
 
 #include <Engine/GameInstance.h>
 
-#include "Hexachess/Types/AIType.h"
+#include "Types/AIType.h"
 
 #include "HexaGameInstance.generated.h"
 
