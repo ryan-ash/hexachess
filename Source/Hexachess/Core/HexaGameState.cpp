@@ -176,7 +176,7 @@ TArray<FIntPoint> AHexaGameState::CalculateCopycatAIMove(bool IsWhiteAI)
 
 TArray<FIntPoint> AHexaGameState::CalculateMinMaxAIMove(bool IsWhiteAI, EAIDifficulty AIDifficulty)
 {
-    TArray<int32> AIDifficultyDepths = {2, 4, 6};
+    TArray<int32> AIDifficultyDepths = {2, 3, 4};
     int32 Depth = AIDifficultyDepths[static_cast<int32>(AIDifficulty)];
 
     TArray<FIntPoint> Result;
