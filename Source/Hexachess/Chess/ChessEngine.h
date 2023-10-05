@@ -253,7 +253,8 @@ class Board {
         bool is_main_board = &in_board == &board_map;
 
         #if WITH_EDITOR
-        UE_LOG(LogChessEngine, Log, TEXT("%s: Move piece from (%d, %d) to (%d, %d)"), is_main_board ? TEXT("MAIN") : TEXT("INNER"), start.x, start.y, goal.x, goal.y);
+        // disabled for now, might be costly
+        // UE_LOG(LogChessEngine, Log, TEXT("%s: Move piece from (%d, %d) to (%d, %d)"), is_main_board ? TEXT("MAIN") : TEXT("INNER"), start.x, start.y, goal.x, goal.y);
         #endif
 
         int32 sp = to_position_key(start);

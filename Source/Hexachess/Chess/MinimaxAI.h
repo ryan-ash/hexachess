@@ -37,7 +37,7 @@ class HEXACHESS_API UMinimaxAIComponent : public UActorComponent
 
 public:
 
-    void StartCalculatingMove(Board* ActiveBoard, bool IsWhiteAI);
+    void StartCalculatingMove(Board* ActiveBoard, bool IsWhiteAI, int32 Depth);
 
     // minmax algorithm
     // - we need to get all the possible moves for the AI

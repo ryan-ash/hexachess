@@ -117,7 +117,7 @@ TArray<FIntPoint> AHexaGameState::GetValidMovesForPlayer(bool IsWhitePlayer)
     return Result;
 }
 
-TArray<FIntPoint> AHexaGameState::MakeAIMove(bool IsWhiteAI, EAIType AIType)
+TArray<FIntPoint> AHexaGameState::MakeAIMove(bool IsWhiteAI, EAIType AIType, EAIDifficulty AIDifficulty)
 {
     TArray<FIntPoint> Result;
 
@@ -131,7 +131,7 @@ TArray<FIntPoint> AHexaGameState::MakeAIMove(bool IsWhiteAI, EAIType AIType)
             Result = CalculateCopycatAIMove(IsWhiteAI);
             break;
         case EAIType::MinMax:
-            Result = CalculateMinMaxAIMove(IsWhiteAI);
+            Result = CalculateMinMaxAIMove(IsWhiteAI, AIDifficulty);
             break;
     }
 
@@ -174,11 +174,14 @@ TArray<FIntPoint> AHexaGameState::CalculateCopycatAIMove(bool IsWhiteAI)
     return Result;
 }
 
-TArray<FIntPoint> AHexaGameState::CalculateMinMaxAIMove(bool IsWhiteAI)
+TArray<FIntPoint> AHexaGameState::CalculateMinMaxAIMove(bool IsWhiteAI, EAIDifficulty AIDifficulty)
 {
+    TArray<int32> AIDifficultyDepths = {2, 4, 6};
+    int32 Depth = AIDifficultyDepths[static_cast<int32>(AIDifficulty)];
+
     TArray<FIntPoint> Result;
 
-    MinimaxAIComponent->StartCalculatingMove(ActiveBoard, IsWhiteAI);
+    MinimaxAIComponent->StartCalculatingMove(ActiveBoard, IsWhiteAI, Depth);
 
     return Result;
 }

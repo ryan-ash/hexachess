@@ -4,7 +4,7 @@
 #include "Chess/ChessEngine.h"
 
 
-void UMinimaxAIComponent::StartCalculatingMove(Board* ActiveBoard, bool IsWhiteAI)
+void UMinimaxAIComponent::StartCalculatingMove(Board* ActiveBoard, bool IsWhiteAI, int32 Depth)
 {
     const auto CompleteCallback = [this](TArray<FIntPoint>& Result)
     {
@@ -12,12 +12,12 @@ void UMinimaxAIComponent::StartCalculatingMove(Board* ActiveBoard, bool IsWhiteA
         GameState->OnAIFinishedCalculatingMove.Broadcast(Result[0], Result[1]);
     };
 
-    AsyncTask(ENamedThreads::AnyThread, [this, ActiveBoard, IsWhiteAI, CompleteCallback]
+    AsyncTask(ENamedThreads::AnyThread, [this, ActiveBoard, IsWhiteAI, CompleteCallback, Depth]
     {
         TArray<FIntPoint> Result;
 
         map<int32, Cell*> board = ActiveBoard->board_map;
-        MoveResult ai_result = MiniMax(ActiveBoard, board, 3, IsWhiteAI, -9000.f, 9000.f);
+        MoveResult ai_result = MiniMax(ActiveBoard, board, Depth, IsWhiteAI, -9000.f, 9000.f);
 
         Position FromPosition = ActiveBoard->to_position(ai_result.FromKey);
         Position ToPosition = ActiveBoard->to_position(ai_result.ToKey);

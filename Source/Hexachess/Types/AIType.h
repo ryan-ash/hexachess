@@ -11,3 +11,11 @@ enum class EAIType : uint8
     Copycat,
     MinMax
 };
+
+UENUM(BlueprintType)
+enum class EAIDifficulty : uint8
+{
+    Easy,
+    Medium,
+    Hard
+};

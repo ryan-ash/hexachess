@@ -76,7 +76,7 @@ public:
 	 * Returns the moves the AI wants to make. Doesn't actually updates the board.
 	 */
 	UFUNCTION(BlueprintCallable)
-	virtual TArray<FIntPoint> MakeAIMove(bool IsWhiteAI, EAIType AIType);
+	virtual TArray<FIntPoint> MakeAIMove(bool IsWhiteAI, EAIType AIType, EAIDifficulty AIDifficulty);
 
 
 	// TODO: fix this flow!
@@ -89,7 +89,7 @@ private:
 
 	TArray<FIntPoint> CalculateRandomAIMove(bool IsWhiteAI);
 	TArray<FIntPoint> CalculateCopycatAIMove(bool IsWhiteAI);
-	TArray<FIntPoint> CalculateMinMaxAIMove(bool IsWhiteAI);
+	TArray<FIntPoint> CalculateMinMaxAIMove(bool IsWhiteAI, EAIDifficulty AIDifficulty);
 
 	Board* ActiveBoard = nullptr;
 };

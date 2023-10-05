@@ -25,5 +25,8 @@ public:
     EAIType AIType = EAIType::Random;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
+    EAIDifficulty AIDifficulty = EAIDifficulty::Easy;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
     bool IsAIPlayingWhite = false;
 };
