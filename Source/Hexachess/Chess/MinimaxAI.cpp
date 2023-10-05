@@ -12,7 +12,7 @@ void UMinimaxAIComponent::StartCalculatingMove(Board* ActiveBoard, bool IsWhiteA
         GameState->OnAIFinishedCalculatingMove.Broadcast(Result[0], Result[1]);
     };
 
-    AsyncTask(ENamedThreads::GameThread, [this, ActiveBoard, IsWhiteAI, CompleteCallback]
+    AsyncTask(ENamedThreads::AnyThread, [this, ActiveBoard, IsWhiteAI, CompleteCallback]
     {
         TArray<FIntPoint> Result;
 
