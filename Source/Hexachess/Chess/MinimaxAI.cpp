@@ -1,15 +1,24 @@
 #include "MinimaxAI.h"
 
-#include "Core/HexaGameState.h"
+#include "Actors/ChessGod.h"
 #include "Chess/ChessEngine.h"
 
+
+void UMinimaxAIComponent::BeginPlay()
+{
+    Super::BeginPlay();
+
+    ChessGod = Cast<AChessGod>(GetOwner());
+}
 
 void UMinimaxAIComponent::StartCalculatingMove(Board* ActiveBoard, bool IsWhiteAI, int32 Depth)
 {
     const auto CompleteCallback = [this](TArray<FIntPoint>& Result)
     {
-        const auto* GameState = GetWorld()->GetGameState<AHexaGameState>();
-        GameState->OnAIFinishedCalculatingMove.Broadcast(Result[0], Result[1]);
+        if (ChessGod.IsValid())
+        {
+            ChessGod->OnAIFinishedCalculatingMove.Broadcast(Result[0], Result[1]);
+        }
     };
 
     AsyncTask(ENamedThreads::AnyThread, [this, ActiveBoard, IsWhiteAI, CompleteCallback, Depth]

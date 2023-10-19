@@ -12,6 +12,7 @@
 
 using namespace std;
 
+class AChessGod;
 class Board;
 class Cell;
 
@@ -37,6 +38,8 @@ class HEXACHESS_API UMinimaxAIComponent : public UActorComponent
 
 public:
 
+	void BeginPlay() override;
+
     void StartCalculatingMove(Board* ActiveBoard, bool IsWhiteAI, int32 Depth);
 
     // minmax algorithm
@@ -47,4 +50,6 @@ public:
     // - keep going up taking other min or max values among the siblings' values
     // - last step should give you the best move; return it
 	MoveResult MiniMax(Board* ActiveBoard, map<int32, Cell*>& in_board, int32 Depth, bool IsWhitePlayer, int32 Alpha, int32 Beta);
+
+	TWeakObjectPtr<AChessGod> ChessGod;
 };
