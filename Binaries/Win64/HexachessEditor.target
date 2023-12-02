@@ -6106,6 +6106,54 @@
 			"Type": "RequiredResource"
 		},
 		{
+			"Path": "$(ProjectDir)/Plugins/AsyncLoadingScreen/Binaries/Win64/UnrealEditor-AsyncLoadingScreen.dll",
+			"Type": "DynamicLibrary"
+		},
+		{
+			"Path": "$(ProjectDir)/Plugins/AsyncLoadingScreen/Binaries/Win64/UnrealEditor-AsyncLoadingScreen.pdb",
+			"Type": "SymbolFile"
+		},
+		{
+			"Path": "$(ProjectDir)/Plugins/AsyncLoadingScreen/Binaries/Win64/UnrealEditor.modules",
+			"Type": "RequiredResource"
+		},
+		{
+			"Path": "$(ProjectDir)/Plugins/AutoSizeComments/Binaries/Win64/UnrealEditor-AutoSizeComments.dll",
+			"Type": "DynamicLibrary"
+		},
+		{
+			"Path": "$(ProjectDir)/Plugins/AutoSizeComments/Binaries/Win64/UnrealEditor-AutoSizeComments.pdb",
+			"Type": "SymbolFile"
+		},
+		{
+			"Path": "$(ProjectDir)/Plugins/AutoSizeComments/Binaries/Win64/UnrealEditor.modules",
+			"Type": "RequiredResource"
+		},
+		{
+			"Path": "$(ProjectDir)/Plugins/BlueprintAssist/Binaries/Win64/UnrealEditor-BlueprintAssist.dll",
+			"Type": "DynamicLibrary"
+		},
+		{
+			"Path": "$(ProjectDir)/Plugins/BlueprintAssist/Binaries/Win64/UnrealEditor-BlueprintAssist.pdb",
+			"Type": "SymbolFile"
+		},
+		{
+			"Path": "$(ProjectDir)/Plugins/BlueprintAssist/Binaries/Win64/UnrealEditor.modules",
+			"Type": "RequiredResource"
+		},
+		{
+			"Path": "$(ProjectDir)/Plugins/DarkerNodes/Binaries/Win64/UnrealEditor-DarkerNodes.dll",
+			"Type": "DynamicLibrary"
+		},
+		{
+			"Path": "$(ProjectDir)/Plugins/DarkerNodes/Binaries/Win64/UnrealEditor-DarkerNodes.pdb",
+			"Type": "SymbolFile"
+		},
+		{
+			"Path": "$(ProjectDir)/Plugins/DarkerNodes/Binaries/Win64/UnrealEditor.modules",
+			"Type": "RequiredResource"
+		},
+		{
 			"Path": "$(ProjectDir)/Plugins/ElectronicNodes/Binaries/Win64/UnrealEditor-ElectronicNodes.dll",
 			"Type": "DynamicLibrary"
 		},
@@ -27329,6 +27377,22 @@
 		},
 		{
 			"Path": "$(ProjectDir)/Hexachess.uproject",
+			"Type": "UFS"
+		},
+		{
+			"Path": "$(ProjectDir)/Plugins/AsyncLoadingScreen/AsyncLoadingScreen.uplugin",
+			"Type": "UFS"
+		},
+		{
+			"Path": "$(ProjectDir)/Plugins/AutoSizeComments/AutoSizeComments.uplugin",
+			"Type": "UFS"
+		},
+		{
+			"Path": "$(ProjectDir)/Plugins/BlueprintAssist/BlueprintAssist.uplugin",
+			"Type": "UFS"
+		},
+		{
+			"Path": "$(ProjectDir)/Plugins/DarkerNodes/DarkerNodes.uplugin",
 			"Type": "UFS"
 		},
 		{
