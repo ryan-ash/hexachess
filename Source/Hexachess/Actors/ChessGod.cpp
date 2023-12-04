@@ -2,6 +2,7 @@
 
 #include "Chess/ChessEngine.h"
 
+
 AChessGod::AChessGod(const FObjectInitializer& ObjectInitializer)
 {
     MinimaxAIComponent = CreateDefaultSubobject<UMinimaxAIComponent>(TEXT("MinimaxAIComponent"));
@@ -163,6 +164,8 @@ TArray<FIntPoint> AChessGod::CalculateRandomAIMove(bool IsWhiteAI)
             Result.Add(FIntPoint{ToPosition.x, ToPosition.y});
         }
     }
+
+    OnAIFinishedCalculatingMove.Broadcast(Result[0], Result[1]);
 
     return Result;
 }
