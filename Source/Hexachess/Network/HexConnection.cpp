@@ -82,14 +82,15 @@ FString AHexConnection::HexToIp(const FString& HexValue, const FString& Key)
 	return Ip;
 }
 
-FString AHexConnection::ConvertIpWithUTCKey(const FString& Ip)
+FString AHexConnection::ConvertIpWithUTCKey(const FString& Ip, bool UseStaticKey)
 {
+	const int32 StaticKey = 946684800; // 2000-01-01 00:00:00
 	FDateTime Now = FDateTime::UtcNow();
-	uint8 UTCSeconds = Now.GetSecond();
+	uint8 UTCSeconds = UseStaticKey ? StaticKey : Now.GetSecond();
     
 	FString Key = FString::Printf(TEXT("%02X"), UTCSeconds);
     
-	// Передаем ключ для XOR-шифрования IP
+	// passing the key to encode the IP
 	FString EncodedIpPart = IpToHex(Ip, Key);
     
 	return Key + EncodedIpPart;
