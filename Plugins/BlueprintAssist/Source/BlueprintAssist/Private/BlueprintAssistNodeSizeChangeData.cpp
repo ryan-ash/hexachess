@@ -12,6 +12,7 @@ void FBAPinChangeData::UpdatePin(UEdGraphPin* Pin)
 	bPinLinked = FBAUtils::IsPinLinked(Pin);
 	PinValue = Pin->DefaultValue;
 	PinTextValue = Pin->DefaultTextValue;
+	PinLabel = GetPinLabel(Pin);
 	PinObject = GetPinDefaultObjectName(Pin);
 }
 
@@ -41,6 +42,11 @@ bool FBAPinChangeData::HasPinChanged(UEdGraphPin* Pin)
 		return true;
 	}
 
+	if (!PinLabel.EqualTo(GetPinLabel(Pin), ETextComparisonLevel::Default))
+	{
+		return true;
+	}
+
 	const FString PinDefaultObjectName = GetPinDefaultObjectName(Pin);
 	if (PinObject != PinDefaultObjectName)
 	{
@@ -53,6 +59,19 @@ bool FBAPinChangeData::HasPinChanged(UEdGraphPin* Pin)
 FString FBAPinChangeData::GetPinDefaultObjectName(UEdGraphPin* Pin) const
 {
 	return Pin->DefaultObject ? Pin->DefaultObject->GetName() : FString();
+}
+
+FText FBAPinChangeData::GetPinLabel(UEdGraphPin* Pin) const
+{
+	if (Pin)
+	{
+		if (UEdGraphNode* GraphNode = Pin->GetOwningNodeUnchecked())
+		{
+			return GraphNode->GetPinDisplayName(Pin);
+		}
+	}
+
+	return FText::GetEmpty();
 }
 
 FBANodeSizeChangeData::FBANodeSizeChangeData(UEdGraphNode* Node)
@@ -79,6 +98,8 @@ void FBANodeSizeChangeData::UpdateNode(UEdGraphNode* Node)
 	{
 		DelegateFunctionName = Delegate->GetFunctionName();
 	}
+
+	PropertyAccessTextPath = GetPropertyAccessTextPath(Node);
 }
 
 bool FBANodeSizeChangeData::HasNodeChanged(UEdGraphNode* Node)
@@ -147,5 +168,24 @@ bool FBANodeSizeChangeData::HasNodeChanged(UEdGraphNode* Node)
 		}
 	}
 
+	if (PropertyAccessTextPath != GetPropertyAccessTextPath(Node))
+	{
+		return true;
+	}
+
 	return false;
+}
+
+FString FBANodeSizeChangeData::GetPropertyAccessTextPath(UEdGraphNode* Node)
+{
+	// have to read the property directly because K2Node_PropertyAccess is not exposed
+	if (const FTextProperty* TextPathProperty = CastField<FTextProperty>(Node->GetClass()->FindPropertyByName("TextPath")))
+	{
+		if (const FText* TextResult = TextPathProperty->ContainerPtrToValuePtr<FText>(Node))
+		{
+			return TextResult->ToString();
+		}
+	}
+
+	return FString();
 }

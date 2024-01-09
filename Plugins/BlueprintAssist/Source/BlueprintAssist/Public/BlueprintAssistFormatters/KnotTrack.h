@@ -76,7 +76,6 @@ struct BLUEPRINTASSIST_API FKnotNodeTrack
 		TSharedPtr<FBAGraphHandler> InGraphHandler,
 		UEdGraphPin* InParentPin,
 		TArray<UEdGraphPin*> InLinkedTo,
-		float InTrackY,
 		bool bInIsLoopingTrack);
 
 	float GetTrackHeight();

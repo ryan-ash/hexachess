@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "AutoSizeCommentsCacheFile.h"
 #include "AutoSizeCommentsMacros.h"
 #include "AutoSizeCommentsNodeChangeData.h"
 
@@ -11,11 +12,14 @@ class SGraphPanel;
 
 struct FASCGraphHandlerData
 {
-	TSet<TWeakObjectPtr<UEdGraphNode_Comment>> RegisteredComments;
 	TArray<TWeakObjectPtr<UEdGraphNode_Comment>> LastSelectionSet;
 	FDelegateHandle OnGraphChangedHandle;
 
 	TMap<FGuid, FASCCommentChangeData> CommentChangeData;
+	FASCGraphData GraphCacheData;
+
+	float LastZoomLevel = -1;
+	EGraphRenderingLOD::Type LastLOD = EGraphRenderingLOD::Type::DefaultDetail;
 };
 
 class FAutoSizeCommentGraphHandler
@@ -33,17 +37,20 @@ public:
 
 	void AutoInsertIntoCommentNodes(TWeakObjectPtr<UEdGraphNode> Node, TWeakObjectPtr<UEdGraphNode> LastSelectedNode);
 
-	void RegisterActiveGraphPanel(TSharedPtr<SGraphPanel> GraphPanel) { ActiveGraphPanels.Add(GraphPanel); }
+	void RegisterActiveGraphPanel(TSharedPtr<SGraphPanel> GraphPanel);
 
 	void RequestGraphVisualRefresh(TSharedPtr<SGraphPanel> GraphPanel);
 
 	void ProcessAltReleased(TSharedPtr<SGraphPanel> GraphPanel);
 
-	bool RegisterComment(UEdGraphNode_Comment* Comment);
-
+	FASCGraphHandlerData& GetGraphHandlerData(UEdGraph* Graph) { return GraphDatas.FindOrAdd(Graph); }
 	void UpdateCommentChangeState(UEdGraphNode_Comment* Comment);
 	bool HasCommentChangeState(UEdGraphNode_Comment* Comment) const;
 	bool HasCommentChanged(UEdGraphNode_Comment* Comment);
+
+	TArray<UEdGraph*> GetActiveGraphs();
+
+	EGraphRenderingLOD::Type GetGraphLOD(TSharedPtr<SGraphPanel> GraphPanel);
 
 private:
 	TMap<TWeakObjectPtr<UEdGraph>, FASCGraphHandlerData> GraphDatas;
@@ -85,4 +92,6 @@ private:
 	void RefreshGraphVisualRefresh(TWeakPtr<SGraphPanel> GraphPanel);
 
 	EASCResizingMode GetResizingMode(UEdGraph* Graph) const;
+
+	void CheckCacheDataError(UEdGraph* Graph);
 };

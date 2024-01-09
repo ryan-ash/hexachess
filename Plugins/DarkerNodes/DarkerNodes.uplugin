@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
 	"Version": 1,
-	"VersionName": "3.3",
+	"VersionName": "3.4",
 	"FriendlyName": "Darker Nodes",
 	"Description": "Modern theme for the Unreal editor",
 	"Category": "Editor",
@@ -10,7 +10,7 @@
 	"DocsURL": "https://github.com/hugoattal/DarkerNodes",
 	"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/4b3441f0228a40ec9ca986489a5bd682",
 	"SupportURL": "https://forums.unrealengine.com/unreal-engine/marketplace/1840825-darker-nodes-modern-theme-for-the-unreal-editor",
-	"EngineVersion": "5.2.0",
+	"EngineVersion": "5.3.0",
 	"CanContainContent": true,
 	"Installed": true,
 	"Modules": [

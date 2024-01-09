@@ -328,6 +328,8 @@ struct BLUEPRINTASSIST_API FBAUtils
 
 	static bool ArePinsStraightened(TSharedPtr<FBAGraphHandler> GraphHandler, FPinLink& PinLink);
 
+	static FSlateRect GetGraphPanelBounds(TSharedPtr<SGraphPanel> GraphPanel);
+
 	static bool IsNodeVisible(TSharedPtr<SGraphPanel> GraphPanel, UEdGraphNode* Node);
 
 	static FString GetPinName(UEdGraphPin* Pin, bool bIncludeOwningNode = false);
@@ -438,6 +440,10 @@ struct BLUEPRINTASSIST_API FBAUtils
 
 	static TSharedPtr<SGraphPin> GetHoveredGraphPin(TSharedPtr<SGraphPanel> GraphPanel);
 
+	static TArray<TSharedPtr<SGraphPin>> GetHoveredGraphPins(TSharedPtr<SGraphPanel> GraphPanel);
+
+	static FPinLink GetHoveredPinLink(TSharedPtr<SGraphPanel> GraphPanel);
+
 	static UEdGraphPin* GetHoveredPin(TSharedPtr<SGraphPanel> GraphPanel);
 
 	static TSharedPtr<SGraphNode> GetHoveredGraphNode(TSharedPtr<SGraphPanel> GraphPanel);
@@ -457,6 +463,10 @@ struct BLUEPRINTASSIST_API FBAUtils
 	static bool IsClickableWidget(TSharedPtr<SWidget> Widget);
 
 	static FVector2D GraphCoordToPanelCoord(
+		TSharedPtr<SGraphPanel> GraphPanel,
+		const FVector2D& PanelSpaceCoordinate);
+
+	static FVector2D PanelCoordToGraphCoord(
 		TSharedPtr<SGraphPanel> GraphPanel,
 		const FVector2D& PanelSpaceCoordinate);
 
@@ -591,4 +601,5 @@ struct BLUEPRINTASSIST_API FBAUtils
 	static FGuid GetGraphGuid(UEdGraph* Graph);
 
 	static bool IsNodeBeingRenamed(TSharedPtr<SGraphNode> GraphNode);
+	static EEdGraphPinDirection GetOppositeDirection(EEdGraphPinDirection Direction);
 };

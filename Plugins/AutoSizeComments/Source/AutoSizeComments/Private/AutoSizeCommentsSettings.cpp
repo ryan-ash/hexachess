@@ -11,7 +11,7 @@
 UAutoSizeCommentsSettings::UAutoSizeCommentsSettings(const FObjectInitializer& ObjectInitializer) :
 	Super(ObjectInitializer)
 {
-	ResizingMode = EASCResizingMode::Always;
+	ResizingMode = EASCResizingMode::Reactive;
 	AutoInsertComment = EASCAutoInsertComment::Always;
 	bSelectNodeWhenClickingOnPin = true;
 	bAutoRenameNewComments = true;
@@ -58,8 +58,8 @@ UAutoSizeCommentsSettings::UAutoSizeCommentsSettings(const FObjectInitializer& O
 	bEnableCommentBubbleDefaults = false;
 	bDefaultColorCommentBubble = false;
 	bDefaultShowBubbleWhenZoomed = true;
-	CacheSaveLocation = EASCCacheSaveLocation::Plugin;
-	bSaveCommentNodeDataToFile = true;
+	CacheSaveMethod = EASCCacheSaveMethod::MetaData;
+	CacheSaveLocation = EASCCacheSaveLocation::Project;
 	bSaveCommentDataOnSavingGraph = true;
 	bSaveCommentDataOnExit = true;
 	bPrettyPrintCommentCacheJSON = false;
@@ -76,8 +76,9 @@ UAutoSizeCommentsSettings::UAutoSizeCommentsSettings(const FObjectInitializer& O
 	bIgnoreKnotNodesWhenResizing = false;
 	bIgnoreSelectedNodesOnCreation = false;
 	bRefreshContainingNodesOnMove = false;
-	bDisableTooltip = false;
+	bDisableTooltip = true;
 	bHighlightContainingNodesOnSelection = true;
+	bUseMaxDetailNodes = ASC_UE_VERSION_OR_LATER(5, 0);
 	IgnoredGraphs.Add("ControlRigGraph");
 	bSuppressSuggestedSettings = false;
 	bSuppressSourceControlNotification = false;
@@ -89,7 +90,6 @@ UAutoSizeCommentsSettings::UAutoSizeCommentsSettings(const FObjectInitializer& O
 	bHideCornerPoints = false;
 
 	bEnableFixForSortDepthIssue = false;
-	bStoreCacheDataInPackageMetaData = false;
 
 	bDebugGraph_ASC = false;
 	bDisablePackageCleanup = false;

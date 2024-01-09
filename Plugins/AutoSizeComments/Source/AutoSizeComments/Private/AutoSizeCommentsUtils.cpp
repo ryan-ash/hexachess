@@ -72,6 +72,20 @@ TArray<UEdGraphNode*> FASCUtils::GetLinkedNodes(const UEdGraphNode* Node, EEdGra
 	return Nodes.Array();
 }
 
+TArray<UEdGraphNode_Comment*> FASCUtils::GetCommentsFromGraph(UEdGraph* Graph)
+{
+	TArray<UEdGraphNode_Comment*> Comments;
+	for (UEdGraphNode* Node : Graph->Nodes)
+	{
+		if (UEdGraphNode_Comment* Comment = Cast<UEdGraphNode_Comment>(Node))
+		{
+			Comments.Add(Comment);
+		}
+	}
+
+	return Comments;
+}
+
 bool FASCUtils::HasNodeBeenDeleted(UEdGraphNode* Node)
 {
 	if (Node == nullptr)
@@ -187,6 +201,33 @@ TArray<UEdGraphNode_Comment*> FASCUtils::GetSelectedComments(TSharedPtr<SGraphPa
 	}
 
 	return OutComments;
+}
+
+TSet<UEdGraphNode*> FASCUtils::GetSelectedNodes(TSharedPtr<SGraphPanel> GraphPanel, bool bExpandComments)
+{
+	TSet<UEdGraphNode*> SelectedNodes;
+	if (!GraphPanel)
+	{
+		return SelectedNodes;
+	}
+
+	for (UObject* Obj : GraphPanel->SelectionManager.GetSelectedNodes())
+	{
+		if (UEdGraphNode* Node = Cast<UEdGraphNode>(Obj))
+		{
+			SelectedNodes.Add(Node);
+
+			if (bExpandComments)
+			{
+				if (UEdGraphNode_Comment* SelectedComment = Cast<UEdGraphNode_Comment>(Node))
+				{
+					SelectedNodes.Append(GetNodesUnderComment(SelectedComment));
+				}
+			}
+		}
+	}
+
+	return SelectedNodes;
 }
 
 bool FASCUtils::IsGraphReadOnly(TSharedPtr<SGraphPanel> GraphPanel)

@@ -94,13 +94,12 @@ public:
 
 	TSharedPtr<FFormatterInterface> FormatNodes(UEdGraphNode* Node, bool bUsingFormatAll = false);
 
-	void CancelProcessingNodeSizes();
+	/**
+	 * Cancel active node size and formatting processes, also clear any active related notifications and transactions
+	 */
+	void CancelActiveFormatting();
 
-	void CancelCachingNotification();
-
-	void CancelFormattingNodes();
-
-	void CancelSizeTimeoutNotification();
+	void CancelSizeTimeoutNotification(bool bSaveFocusedNodeSize);
 
 	TSharedPtr<SDockTab> GetTab() const { return CachedTab.Pin(); }
 
@@ -142,8 +141,6 @@ public:
 
 	float GetPendingNodeSizeProgress() const;
 
-	void ClearCache();
-
 	void ClearFormatters();
 
 	bool FilterSelectiveFormatting(UEdGraphNode* Node, const TArray<UEdGraphNode*>& NodesToFormat);
@@ -164,7 +161,8 @@ public:
 
 	void PreFormatting();
 
-	void PostFormatting(TArray<TSharedPtr<FFormatterInterface>> Formatters);
+	void PostFormatting(const TArray<TSharedPtr<FFormatterInterface>>& Formatters);
+	void PostFormatComments(const TArray<TSharedPtr<FFormatterInterface>>& Formatters);
 
 	FBAGraphData& GetGraphData();
 	FBANodeData& GetNodeData(UEdGraphNode* Node);
@@ -201,17 +199,17 @@ private:
 	FBADelayedDelegate DelayedCacheSizeTimeout;
 	FBADelayedDelegate DelayedCacheSizeFinished;
 
-	bool bInitialZoomFinished;
+	bool bInitialZoomFinished = false;
 	FVector2D LastGraphView;
-	float LastZoom;
+	float LastZoom = 1.0f;
 
 	// update node size
-	float NodeSizeTimeout;
+	float NodeSizeTimeout = 0.f;
 	TSet<UEdGraphNode*> PendingFormatting;
-	UEdGraphNode* FocusedNode;
-	bool bFullyZoomed;
+	UEdGraphNode* FocusedNode = nullptr;
+	bool bFullyZoomed = false;
 	FVector2D ViewCache;
-	float ZoomCache;
+	float ZoomCache = 1.0f;
 
 	bool bDeferredGraphChanged;
 
@@ -220,8 +218,8 @@ private:
 	TWeakObjectPtr<UEdGraphNode> LastSelectedNode;
 
 	// lerp viewport position
-	bool bLerpViewport;
-	bool bCenterWhileLerping;
+	bool bLerpViewport = false;
+	bool bCenterWhileLerping = false;
 	FVector2D TargetLerpLocation;
 
 	int32 InitialPendingSize = 0;
@@ -238,7 +236,6 @@ private:
 
 	FDelegateHandle OnGraphChangedHandle;
 
-	TWeakPtr<SNotificationItem> CachingNotification;
 	TWeakPtr<SNotificationItem> SizeTimeoutNotification;
 
 	void OnGraphInitializedDelayed();
@@ -249,7 +246,9 @@ private:
 
 	void OnSelectionChanged(UEdGraphNode* PreviousNode, UEdGraphNode* NewNode);
 
-	void LinkExecWhenCreatedFromParameter(UEdGraphNode* NodeCreated);
+	void TryInsertNewNode(UEdGraphNode* NewNode);
+
+	bool LinkExecWhenCreatedFromParameter(UEdGraphNode* NodeCreated, bool bInsert);
 
 	void AutoInsertExecNode(UEdGraphNode* NodeCreated);
 
@@ -272,10 +271,6 @@ private:
 	void FormatNewNodes(const TArray<UEdGraphNode*>& NewNodes);
 
 	void AutoAddParentNode(UEdGraphNode* NewNode);
-
-	void ShowCachingNotification();
-
-	FText GetCachingMessage() const;
 
 	void ShowSizeTimeoutNotification();
 

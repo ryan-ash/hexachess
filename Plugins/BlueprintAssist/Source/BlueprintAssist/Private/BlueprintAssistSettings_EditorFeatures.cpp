@@ -27,7 +27,8 @@ UBASettings_EditorFeatures::UBASettings_EditorFeatures(const FObjectInitializer&
 	GroupMovementChords.Add(FInputChord(EKeys::SpaceBar));
 
 	//~~~ General | NewNodeBehaviour
-	bConnectExecutionWhenDraggingOffParameter = true;
-	bInsertNewExecutionNodes = true;
-	bInsertNewPureNodes = true;
+	InsertNewNodeKeyChord = FInputChord(EKeys::LeftControl);
+	bAlwaysConnectExecutionFromParameter = true;
+	bAlwaysInsertFromParameter = false;
+	bAlwaysInsertFromExecution = false;
 }

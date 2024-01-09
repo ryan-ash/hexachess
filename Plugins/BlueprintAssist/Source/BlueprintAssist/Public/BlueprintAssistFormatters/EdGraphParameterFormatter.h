@@ -48,8 +48,7 @@ public:
 		TSharedPtr<FBAGraphHandler> InGraphHandler,
 		UEdGraphNode* InRootNode,
 		TSharedPtr<FEdGraphFormatter> InGraphFormatter = nullptr,
-		UEdGraphNode* InNodeToKeepStill = nullptr,
-		TArray<UEdGraphNode*> InIgnoredNodes = TArray<UEdGraphNode*>());
+		UEdGraphNode* InNodeToKeepStill = nullptr);
 
 	virtual ~FEdGraphParameterFormatter() override { }
 

@@ -5,7 +5,7 @@
 #include "DarkerNodes.h"
 #include "DarkerNodesCommands.h"
 #include "Interfaces/IPluginManager.h"
-#include "MainFrame/Public/Interfaces/IMainFrameModule.h"
+#include "Interfaces/IMainFrameModule.h"
 #include "Popup/DNUpdatePopup.h"
 
 #define LOCTEXT_NAMESPACE "FDarkerNodesModule"

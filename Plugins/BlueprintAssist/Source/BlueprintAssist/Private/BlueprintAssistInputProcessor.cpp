@@ -174,10 +174,7 @@ bool FBAInputProcessor::HandleKeyDownEvent(FSlateApplication& SlateApp, const FK
 		// cancel graph handler ongoing processes
 		if (InKeyEvent.GetKey() == EKeys::Escape)
 		{
-			GraphHandler->CancelSizeTimeoutNotification();
-			GraphHandler->CancelCachingNotification();
-			GraphHandler->CancelFormattingNodes();
-			GraphHandler->ResetTransactions();
+			GraphHandler->CancelActiveFormatting();
 		}
 
 		TSharedPtr<SDockTab> Tab = GraphHandler->GetTab();

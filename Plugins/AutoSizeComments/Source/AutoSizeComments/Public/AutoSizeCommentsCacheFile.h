@@ -24,6 +24,8 @@ struct AUTOSIZECOMMENTS_API FASCCommentData
 	void SetInitialized(bool bValue) { bInit = bValue != 0; }
 	bool HasBeenInitialized() const { return static_cast<bool>(bInit); }
 
+	void UpdateNodesUnderComment(UEdGraphNode_Comment* Comment);
+
 private:
 	/* Is this node a header node */
 	UPROPERTY()
@@ -42,9 +44,16 @@ struct AUTOSIZECOMMENTS_API FASCGraphData
 	UPROPERTY()
 	TMap<FGuid, FASCCommentData> CommentData; // node guid -> comment data
 
-	bool bTriedLoadingMetaData = false;
+	bool bInitialized = false;
 
 	void CleanupGraph(UEdGraph* Graph);
+
+	bool LoadFromPackageMetaData(UEdGraph* Graph);
+	void SaveToPackageMetaData(UEdGraph* Graph);
+
+	bool IsEmpty() const { return CommentData.Num() == 0; }
+
+	FASCCommentData& GetCommentData(UEdGraphNode_Comment* Comment);
 };
 
 USTRUCT()
@@ -77,21 +86,27 @@ public:
 
 	void Init();
 
-	void LoadCache();
+	void Cleanup();
 
-	void SaveCache();
+	void LoadCacheFromFile();
+
+	FASCCacheData CreateCacheFromFile();
+
+	void InitMetaData();
+
+	void SaveCacheToFile();
 
 	void DeleteCache();
 
 	void CleanupFiles();
 
-	void UpdateCommentState(UEdGraphNode_Comment* Comment);
-	void UpdateNodesUnderComment(UEdGraphNode_Comment* Comment);
+	void UpdateNodesUnderComment(UEdGraphNode_Comment* Comment) { GetCommentData(Comment).UpdateNodesUnderComment(Comment); }
 
+	FASCCommentData& GetCommentData(UEdGraphNode_Comment* Comment);
 	FASCGraphData& GetGraphData(UEdGraph* Graph);
+	bool RemoveGraphData(UEdGraph* Graph);
+	FASCPackageData* FindPackageData(UPackage* Package);
 
-	void SaveGraphDataToPackageMetaData(UEdGraph* Graph);
-	bool LoadGraphDataFromPackageMetaData(UEdGraph* Graph, FASCGraphData& GraphData);
 	void ClearPackageMetaData(UEdGraph* Graph);
 
 	FString GetProjectCachePath(bool bFullPath = false);
@@ -101,13 +116,15 @@ public:
 
 	bool GetNodesUnderComment(TSharedPtr<SAutoSizeCommentsGraphNode> ASCNode, TArray<UEdGraphNode*>& OutNodesUnderComment);
 
-	FASCCommentData& GetCommentData(TSharedPtr<SAutoSizeCommentsGraphNode> ASCNode);
-
 	FASCCommentData& GetCommentData(UEdGraphNode* CommentNode);
 
 	void PrintCache();
 
-private:
+	void OnObjectLoaded(UObject* Obj);
+
+protected:
+	FASCGraphData& GetCacheFileGraphData(UEdGraph* Graph);
+
 	bool bHasLoaded = false;
 
 	FASCCacheData CacheData;

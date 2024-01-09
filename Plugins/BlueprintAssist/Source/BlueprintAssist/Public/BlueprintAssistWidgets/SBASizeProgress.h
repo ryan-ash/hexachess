@@ -18,6 +18,8 @@ class BLUEPRINTASSIST_API SBASizeProgress final : public SCompoundWidget
 public:
 	void RenderGraphToBrush();
 
+	bool IsSnapshotValid() const;
+
 	void ShowOverlay();
 
 	void HideOverlay();

@@ -199,7 +199,9 @@ void SBADebugMenu::Tick(const FGeometry& AllottedGeometry, const double InCurren
 					FText::FromString(Node->NodeGuid.ToString()),
 					FText::FromString(FBAUtils::GetNodeGuid(Node).ToString()));
 
-				NodeUnderCursorSize = FText::FromString(GraphNode->GetDesiredSize().ToString());
+				NodeUnderCursorSize = FText::Format(INVTEXT("P:{0} S:{1})"),
+					FText::FromString(GraphNode->GetPosition().ToString()),
+					FText::FromString(GraphNode->GetDesiredSize().ToString()));
 			}
 		}
 

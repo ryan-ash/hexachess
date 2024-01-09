@@ -441,6 +441,11 @@ void SOpenWindowMenu::AddOpenTabItems(TArray<TSharedPtr<FOpenWindowItem_Base>>& 
 	// Category Cinematics
 	TabInfos.Add(FOpenTabItem("SequenceRecorder", "SequenceRecorder.TabIcon", "Sequence Recorder"));
 
+	{
+		// try to load the undo history for the undo history tab below so that it registers the nomad tab
+		FModuleManager::Get().LoadModule("UndoHistoryEditor");
+	}
+
 	// Nomad unlisted tabs - search for '->RegisterNomadTabSpawner('
 	TabInfos.Add(FOpenTabItem("ReferenceViewer", "Kismet.Tabs.FindResults", "Reference Viewer"));
 	TabInfos.Add(FOpenTabItem("UndoHistory", "UndoHistory.TabIcon", "Undo History"));
@@ -544,17 +549,25 @@ void SOpenWindowMenu::AddOpenTabItems(TArray<TSharedPtr<FOpenWindowItem_Base>>& 
 	{
 		if (Item.AlternateTabManager.IsValid())
 		{
-			if (!Item.AlternateTabManager->HasTabSpawner(Item.TabName) &&
-				!Item.AlternateTabManager->FindExistingLiveTab(Item.TabName).IsValid())
+			if (!Item.AlternateTabManager->HasTabSpawner(Item.TabName))
 			{
+				if (UBASettings::HasDebugSetting("OpenWindowMenu"))
+				{
+					UE_LOG(LogBlueprintAssist, Warning, TEXT("Missing open tab alternate %s"), *Item.TabName.ToString());
+				}
+
 				continue;
 			}
 		}
 		else
 		{
-			if (!FGlobalTabmanager::Get()->HasTabSpawner(Item.TabName) &&
-				!FGlobalTabmanager::Get()->FindExistingLiveTab(Item.TabName).IsValid())
+			if (!FGlobalTabmanager::Get()->HasTabSpawner(Item.TabName))
 			{
+				if (UBASettings::HasDebugSetting("OpenWindowMenu"))
+				{
+					UE_LOG(LogBlueprintAssist, Warning, TEXT("Missing open tab %s"), *Item.TabName.ToString());
+				}
+
 				continue;
 			}
 		}

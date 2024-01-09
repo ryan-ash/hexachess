@@ -1118,20 +1118,9 @@ void FBANodeActions::LinkNodesBetweenWires()
 		return;
 	}
 
-	TSharedPtr<SGraphPin> GraphPinForHoveredWire = FBAUtils::GetHoveredGraphPin(GraphHandler->GetGraphPanel());
-	if (!GraphPinForHoveredWire.IsValid())
-	{
-		return;
-	}
-
-	UEdGraphPin* PinForHoveredWire = GraphPinForHoveredWire->GetPinObj();
-	if (PinForHoveredWire == nullptr)
-	{
-		return;
-	}
-
-	// we should only link node between wires (pins with connections)
-	if (PinForHoveredWire->LinkedTo.Num() == 0)
+	FPinLink HoveredWire = FBAUtils::GetHoveredPinLink(GraphHandler->GetGraphPanel());
+	UEdGraphPin* PinForHoveredWire = HoveredWire.From;
+	if (!PinForHoveredWire)
 	{
 		return;
 	}
@@ -1190,10 +1179,12 @@ void FBANodeActions::LinkNodesBetweenWires()
 		}
 	}
 
-	UEdGraphPin* ConnectedPin
-		= PinForHoveredWire->LinkedTo.Num() > 0
-		? PinForHoveredWire->LinkedTo[0]
-		: nullptr;
+	UEdGraphPin* ConnectedPin = HoveredWire.To;
+
+	if (!ConnectedPin && PinForHoveredWire->LinkedTo.Num() > 0)
+	{
+		ConnectedPin = PinForHoveredWire->LinkedTo[0];
+	}
 
 	if (ConnectedPin != nullptr)
 	{
@@ -1219,9 +1210,7 @@ void FBANodeActions::LinkNodesBetweenWires()
 
 	for (FPinLink& Link : PendingLinks)
 	{
-		Link.From->BreakAllPinLinks();
-
-		const bool bMadeLink = FBAUtils::TryCreateConnection(Link.From, Link.To, true);
+		const bool bMadeLink = FBAUtils::TryCreateConnection(Link.From, Link.To, EBABreakMethod::Default);
 		if (bMadeLink)
 		{
 			if (UBASettings::GetFormatterSettings(Graph).GetAutoFormatting() != EBAAutoFormatting::Never)
@@ -1415,7 +1404,8 @@ void FBANodeActions::SwapNodeInDirection(EEdGraphPinDirection Direction)
 	TArray<FPinLink> PendingConnections;
 	TArray<FPinLink> PendingDisconnects;
 
-	TSharedPtr<FScopedTransaction> Transaction = MakeShareable(new FScopedTransaction(NSLOCTEXT("UnrealEd", "SwapNodes", "Swap Nodes")));
+	const FText TransactionDesc = Direction == EGPD_Output ? INVTEXT("Swap Node(s) Right") : INVTEXT("Swap Node(s) Left"); 
+	TSharedPtr<FScopedTransaction> Transaction = MakeShareable(new FScopedTransaction(TransactionDesc));
 
 	UEdGraphPin* PinAInDirection = nullptr;
 	{
@@ -1545,11 +1535,14 @@ void FBANodeActions::SwapNodeInDirection(EEdGraphPinDirection Direction)
 
 	UEdGraphNode* SelectedNodeToUse = Direction == EGPD_Output ? NodeOpposite : NodeInDirection;
 
+	const int32 PinPosY_Selected = GraphHandler->GetPinY(PinInDirection.GetPin());
+	const int32 PinPosY_A = GraphHandler->GetPinY(PinAInDirection);
+
 	int32 DeltaX_Selected = NodeA->NodePosX - SelectedNodeToUse->NodePosX;
-	int32 DeltaY_Selected = NodeA->NodePosY - SelectedNodeToUse->NodePosY;
+	int32 DeltaY_Selected = PinPosY_A - PinPosY_Selected;
 
 	int32 DeltaX_A = SelectedNodeToUse->NodePosX - NodeA->NodePosX;
-	int32 DeltaY_A = SelectedNodeToUse->NodePosY - NodeA->NodePosY;
+	int32 DeltaY_A = PinPosY_Selected - PinPosY_A;
 
 	// Selected nodes: move node and parameters
 	for (UEdGraphNode* SelectedNode : SelectedNodes)
@@ -1557,6 +1550,7 @@ void FBANodeActions::SwapNodeInDirection(EEdGraphPinDirection Direction)
 		TArray<UEdGraphNode*> NodeAndParams = FBAUtils::GetNodeAndParameters(SelectedNode);
 		for (UEdGraphNode* Node : NodeAndParams)
 		{
+			Node->Modify();
 			Node->NodePosX += DeltaX_Selected;
 			Node->NodePosY += DeltaY_Selected;
 		}
@@ -1565,6 +1559,7 @@ void FBANodeActions::SwapNodeInDirection(EEdGraphPinDirection Direction)
 	// NodeA: move node and parameters
 	for (UEdGraphNode* Node : FBAUtils::GetNodeAndParameters(NodeA))
 	{
+		Node->Modify();
 		Node->NodePosX += DeltaX_A;
 		Node->NodePosY += DeltaY_A;
 	}

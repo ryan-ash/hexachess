@@ -37,7 +37,7 @@ private:
 	FSlateStyleSet* AppStyle;
 	FSlateStyleSet* NiagaraStyle;
 
-	const FString CurrentPluginVersion = "3.3";
+	const FString CurrentPluginVersion = "3.4";
 
 	// Utilities
 	void LoadDatabase();

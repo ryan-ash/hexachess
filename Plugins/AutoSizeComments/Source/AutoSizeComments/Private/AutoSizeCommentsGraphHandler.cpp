@@ -4,6 +4,7 @@
 
 #include "AutoSizeCommentsCacheFile.h"
 #include "AutoSizeCommentsGraphNode.h"
+#include "AutoSizeCommentsModule.h"
 #include "AutoSizeCommentsSettings.h"
 #include "AutoSizeCommentsState.h"
 #include "AutoSizeCommentsUtils.h"
@@ -11,7 +12,9 @@
 #include "GraphEditAction.h"
 #include "K2Node_Knot.h"
 #include "SGraphPanel.h"
+#include "Framework/Notifications/NotificationManager.h"
 #include "Misc/LazySingleton.h"
+#include "Widgets/Notifications/SNotificationList.h"
 
 #if ASC_UE_VERSION_OR_LATER(5, 0)
 #include "UObject/ObjectSaveContext.h"
@@ -20,6 +23,95 @@
 #if ASC_UE_VERSION_OR_LATER(5, 1)
 #include "Misc/TransactionObjectEvent.h"
 #endif
+
+
+struct FASCZoomLevel
+{
+public:
+	FASCZoomLevel(float InZoomAmount, const FText& InDisplayText, EGraphRenderingLOD::Type InLOD)
+		: DisplayText(FText::Format(INVTEXT("ASC Zoom {0}"), InDisplayText))
+	 , ZoomAmount(InZoomAmount)
+	 , LOD(InLOD)
+	{
+	}
+
+public:
+	FText DisplayText;
+	float ZoomAmount;
+	EGraphRenderingLOD::Type LOD;
+};
+
+struct FASCZoomLevelsContainer final : FZoomLevelsContainer
+{
+	FASCZoomLevelsContainer()
+	{
+		ZoomLevels.Reserve(20);
+		ZoomLevels.Add(FASCZoomLevel(0.100f, FText::FromString(TEXT("-12")), EGraphRenderingLOD::DefaultDetail));
+		ZoomLevels.Add(FASCZoomLevel(0.125f, FText::FromString(TEXT("-11")), EGraphRenderingLOD::DefaultDetail));
+		ZoomLevels.Add(FASCZoomLevel(0.150f, FText::FromString(TEXT("-10")), EGraphRenderingLOD::DefaultDetail));
+		ZoomLevels.Add(FASCZoomLevel(0.175f, FText::FromString(TEXT("-9")), EGraphRenderingLOD::DefaultDetail));
+		ZoomLevels.Add(FASCZoomLevel(0.200f, FText::FromString(TEXT("-8")), EGraphRenderingLOD::DefaultDetail));
+		ZoomLevels.Add(FASCZoomLevel(0.225f, FText::FromString(TEXT("-7")), EGraphRenderingLOD::DefaultDetail));
+		ZoomLevels.Add(FASCZoomLevel(0.250f, FText::FromString(TEXT("-6")), EGraphRenderingLOD::DefaultDetail));
+		ZoomLevels.Add(FASCZoomLevel(0.375f, FText::FromString(TEXT("-5")), EGraphRenderingLOD::DefaultDetail));
+		ZoomLevels.Add(FASCZoomLevel(0.500f, FText::FromString(TEXT("-4")), EGraphRenderingLOD::DefaultDetail));
+		ZoomLevels.Add(FASCZoomLevel(0.675f, FText::FromString(TEXT("-3")), EGraphRenderingLOD::DefaultDetail));
+		ZoomLevels.Add(FASCZoomLevel(0.750f, FText::FromString(TEXT("-2")), EGraphRenderingLOD::DefaultDetail));
+		ZoomLevels.Add(FASCZoomLevel(0.875f, FText::FromString(TEXT("-1")), EGraphRenderingLOD::DefaultDetail));
+		ZoomLevels.Add(FASCZoomLevel(1.000f, FText::FromString(TEXT("1:1")), EGraphRenderingLOD::DefaultDetail));
+		ZoomLevels.Add(FASCZoomLevel(1.250f, FText::FromString(TEXT("+1")), EGraphRenderingLOD::DefaultDetail));
+		ZoomLevels.Add(FASCZoomLevel(1.375f, FText::FromString(TEXT("+2")), EGraphRenderingLOD::DefaultDetail));
+		ZoomLevels.Add(FASCZoomLevel(1.500f, FText::FromString(TEXT("+3")), EGraphRenderingLOD::DefaultDetail));
+		ZoomLevels.Add(FASCZoomLevel(1.675f, FText::FromString(TEXT("+4")), EGraphRenderingLOD::DefaultDetail));
+		ZoomLevels.Add(FASCZoomLevel(1.750f, FText::FromString(TEXT("+5")), EGraphRenderingLOD::DefaultDetail));
+		ZoomLevels.Add(FASCZoomLevel(1.875f, FText::FromString(TEXT("+6")), EGraphRenderingLOD::DefaultDetail));
+		ZoomLevels.Add(FASCZoomLevel(2.000f, FText::FromString(TEXT("+7")), EGraphRenderingLOD::DefaultDetail));
+	}
+
+	virtual float GetZoomAmount(int32 InZoomLevel) const override
+	{
+		checkSlow(ZoomLevels.IsValidIndex(InZoomLevel));
+		return ZoomLevels[InZoomLevel].ZoomAmount;
+	}
+
+	virtual int32 GetNearestZoomLevel(float InZoomAmount) const override
+	{
+		for (int32 ZoomLevelIndex=0; ZoomLevelIndex < GetNumZoomLevels(); ++ZoomLevelIndex)
+		{
+			if (InZoomAmount <= GetZoomAmount(ZoomLevelIndex))
+			{
+				return ZoomLevelIndex;
+			}
+		}
+
+		return GetDefaultZoomLevel();
+	}
+
+	virtual FText GetZoomText(int32 InZoomLevel) const override
+	{
+		checkSlow(ZoomLevels.IsValidIndex(InZoomLevel));
+		return ZoomLevels[InZoomLevel].DisplayText;
+	}
+
+	virtual int32 GetNumZoomLevels() const override
+	{
+		return ZoomLevels.Num();
+	}
+
+	virtual int32 GetDefaultZoomLevel() const override
+	{
+		return 12;
+	}
+
+	virtual EGraphRenderingLOD::Type GetLOD(int32 InZoomLevel) const override
+	{
+		checkSlow(ZoomLevels.IsValidIndex(InZoomLevel));
+		return ZoomLevels[InZoomLevel].LOD;
+	}
+
+	TArray<FASCZoomLevel> ZoomLevels;
+};
+
 
 FAutoSizeCommentGraphHandler& FAutoSizeCommentGraphHandler::Get()
 {
@@ -84,6 +176,8 @@ void FAutoSizeCommentGraphHandler::BindToGraph(UEdGraph* Graph)
 	GraphData.OnGraphChangedHandle = Graph->AddOnGraphChangedHandler(FOnGraphChanged::FDelegate::CreateRaw(this, &FAutoSizeCommentGraphHandler::OnGraphChanged));
 
 	GraphDatas.Add(Graph, GraphData);
+
+	CheckCacheDataError(Graph);
 }
 
 void FAutoSizeCommentGraphHandler::OnGraphChanged(const FEdGraphEditAction& Action)
@@ -205,6 +299,23 @@ void FAutoSizeCommentGraphHandler::AutoInsertIntoCommentNodes(TWeakObjectPtr<UEd
 	}
 }
 
+void FAutoSizeCommentGraphHandler::RegisterActiveGraphPanel(TSharedPtr<SGraphPanel> GraphPanel)
+{
+	if (GraphPanel.IsValid() && !ActiveGraphPanels.Contains(GraphPanel))
+	{
+		if (UAutoSizeCommentsSettings::Get().bUseMaxDetailNodes)
+		{
+			// TODO: Find fallback for <5.0 if possible
+#if ASC_UE_VERSION_OR_LATER(5, 0)
+			// init the graph panel
+			GraphPanel->SetZoomLevelsContainer<FASCZoomLevelsContainer>();
+#endif
+		}
+
+		ActiveGraphPanels.Add(GraphPanel);
+	}
+}
+
 void FAutoSizeCommentGraphHandler::RequestGraphVisualRefresh(TSharedPtr<SGraphPanel> GraphPanel)
 {
 	if (bPendingGraphVisualRequest)
@@ -256,6 +367,99 @@ EASCResizingMode FAutoSizeCommentGraphHandler::GetResizingMode(UEdGraph* Graph) 
 	}
 
 	return ASCSettings.ResizingMode;
+}
+
+void FAutoSizeCommentGraphHandler::CheckCacheDataError(UEdGraph* Graph)
+{
+	FASCGraphData& GraphData = FAutoSizeCommentsCacheFile::Get().GetGraphData(Graph);
+	TArray<UEdGraphNode_Comment*> Comments = FASCUtils::GetCommentsFromGraph(Graph);
+
+	// skip if we have no comment data for this graph
+	if (GraphData.CommentData.Num() == 0)
+	{
+		return;
+	}
+
+	TSet<FGuid> OldGuids;
+	GraphData.CommentData.GetKeys(OldGuids);
+
+	TSet<FGuid> CurrentGuids;
+	for (UEdGraphNode_Comment* Comment : Comments)
+	{
+		CurrentGuids.Add(Comment->NodeGuid);
+	}
+
+	const int MissingGuids = OldGuids.Difference(CurrentGuids).Num();
+
+	// this is to check if the nodes are having their guid's refreshed somehow
+	// so if we have the same number of nodes and they are all wrong, print an error msg
+	if (OldGuids.Num() == CurrentGuids.Num() && MissingGuids == OldGuids.Num())
+	{
+		UE_LOG(LogAutoSizeComments, Error, TEXT(
+			"Graph '%s' has failed to load all comments\n"
+			"Please report issue this at: https://github.com/AutoSizeComments/AutoSizeComments/issues/13\n"
+			"Please describe any special details of your project (for example: did you just upgrade your project to a new engine version?"),
+			*Graph->GetName());
+
+		FNotificationInfo Info(INVTEXT("ASC: Graph has failed to load comments, see output log for more details"));
+		Info.ExpireDuration = 5.0f;
+		FSlateNotificationManager::Get().AddNotification(Info);
+
+		GraphData.CommentData.Empty();
+	}
+}
+
+EGraphRenderingLOD::Type FAutoSizeCommentGraphHandler::GetGraphLOD(TSharedPtr<SGraphPanel> GraphPanel)
+{
+	if (!GraphPanel.IsValid())
+	{
+		return EGraphRenderingLOD::Type::DefaultDetail;
+	}
+
+	// if we use MaxDetailNodes, we are setting the LOD to DefaultDetail all the time
+	// we need to calculate the LOD without the setting on to fix things such as comment bubbles
+	if (!UAutoSizeCommentsSettings::Get().bUseMaxDetailNodes)
+	{
+		return GraphPanel->GetCurrentLOD();
+	}
+
+	UEdGraph* Graph = GraphPanel->GetGraphObj();
+	if (!Graph)
+	{
+		return EGraphRenderingLOD::Type::DefaultDetail;
+	}
+
+	FASCGraphHandlerData& Data = GetGraphHandlerData(Graph);
+
+	const float ZoomAmount = GraphPanel->GetZoomAmount();
+
+	if (ZoomAmount != Data.LastZoomLevel)
+	{
+		Data.LastZoomLevel = ZoomAmount;
+
+		if (ZoomAmount <= 0.200f)
+		{
+			Data.LastLOD = EGraphRenderingLOD::LowestDetail;
+		}
+		else if (ZoomAmount <= 0.250f)
+		{
+			Data.LastLOD = EGraphRenderingLOD::LowDetail;
+		}
+		else if (ZoomAmount <= 0.675f)
+		{
+			Data.LastLOD = EGraphRenderingLOD::MediumDetail;
+		}
+		else if (ZoomAmount <= 1.375f)
+		{
+			Data.LastLOD = EGraphRenderingLOD::DefaultDetail;
+		}
+		else
+		{
+			Data.LastLOD = EGraphRenderingLOD::FullyZoomedIn;
+		}
+	}
+
+	return Data.LastLOD;
 }
 
 void FAutoSizeCommentGraphHandler::ProcessAltReleased(TSharedPtr<SGraphPanel> GraphPanel)
@@ -386,26 +590,6 @@ void FAutoSizeCommentGraphHandler::ProcessAltReleased(TSharedPtr<SGraphPanel> Gr
 	}));
 }
 
-bool FAutoSizeCommentGraphHandler::RegisterComment(UEdGraphNode_Comment* Comment)
-{
-	if (Comment)
-	{
-		if (UEdGraph* Graph = Comment->GetGraph())
-		{
-			if (FASCGraphHandlerData* GraphData = GraphDatas.Find(Graph))
-			{
-				if (!GraphData->RegisteredComments.Contains(Comment))
-				{
-					GraphData->RegisteredComments.Add(Comment);
-					return true;
-				}
-			}
-		}
-	}
-
-	return false;
-}
-
 void FAutoSizeCommentGraphHandler::UpdateCommentChangeState(UEdGraphNode_Comment* Comment)
 {
 	UEdGraph* Graph = Comment->GetGraph();
@@ -442,6 +626,24 @@ bool FAutoSizeCommentGraphHandler::HasCommentChanged(UEdGraphNode_Comment* Comme
 	}
 
 	return false;
+}
+
+TArray<UEdGraph*> FAutoSizeCommentGraphHandler::GetActiveGraphs()
+{
+	TArray<TWeakObjectPtr<UEdGraph>> GraphWeakPtrs;
+	GraphDatas.GetKeys(GraphWeakPtrs);
+
+	TArray<UEdGraph*> ActiveGraphs;
+
+	for (TWeakObjectPtr<UEdGraph> GraphWeakPtr : GraphWeakPtrs)
+	{
+		if (GraphWeakPtr.IsValid())
+		{
+			ActiveGraphs.Add(GraphWeakPtr.Get());
+		}
+	}
+
+	return ActiveGraphs;
 }
 
 bool FAutoSizeCommentGraphHandler::Tick(float DeltaTime)
@@ -682,8 +884,6 @@ void FAutoSizeCommentGraphHandler::OnObjectSaved(UObject* Object)
 		return;
 	}
 
-	FAutoSizeCommentsCacheFile& CacheFile = FAutoSizeCommentsCacheFile::Get();
-
 	// upon saving a graph, save all comments to cache
 	if (UEdGraph* Graph = Cast<UEdGraph>(Object))
 	{
@@ -692,13 +892,10 @@ void FAutoSizeCommentGraphHandler::OnObjectSaved(UObject* Object)
 			return;
 		}
 
+		FASCGraphData& CacheGraphData = FAutoSizeCommentsCacheFile::Get().GetGraphData(Graph);
+
 		TArray<UEdGraphNode_Comment*> Comments;
 		Graph->GetNodesOfClassEx<UEdGraphNode_Comment>(Comments);
-
-		for (UEdGraphNode_Comment* Comment : Comments)
-		{
-			CacheFile.UpdateCommentState(Comment);
-		}
 
 		if (!bPendingSave)
 		{
@@ -706,10 +903,10 @@ void FAutoSizeCommentGraphHandler::OnObjectSaved(UObject* Object)
 			GEditor->GetTimerManager()->SetTimerForNextTick(FTimerDelegate::CreateRaw(this, &FAutoSizeCommentGraphHandler::SaveSizeCache));
 		}
 
-		if (UAutoSizeCommentsSettings::Get().bStoreCacheDataInPackageMetaData)
+		if (UAutoSizeCommentsSettings::Get().CacheSaveMethod == EASCCacheSaveMethod::MetaData)
 		{
 			// we should do this now since this will edit the package
-			FAutoSizeCommentsCacheFile::Get().SaveGraphDataToPackageMetaData(Graph);
+			CacheGraphData.SaveToPackageMetaData(Graph);
 		}
 		else
 		{
@@ -748,7 +945,7 @@ void FAutoSizeCommentGraphHandler::OnObjectTransacted(UObject* Object, const FTr
 
 void FAutoSizeCommentGraphHandler::SaveSizeCache()
 {
-	FAutoSizeCommentsCacheFile::Get().SaveCache();
+	FAutoSizeCommentsCacheFile::Get().SaveCacheToFile();
 	bPendingSave = false;
 }
 

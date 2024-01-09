@@ -14,6 +14,7 @@ struct FASCUtils
 	static TArray<UEdGraphPin*> GetLinkedPins(const UEdGraphNode* Node, EEdGraphPinDirection Direction = EGPD_MAX);
 
 	static TArray<UEdGraphNode*> GetLinkedNodes(const UEdGraphNode* Node, EEdGraphPinDirection Direction = EGPD_MAX);
+	static TArray<UEdGraphNode_Comment*> GetCommentsFromGraph(UEdGraph* Graph);
 
 	static bool HasNodeBeenDeleted(UEdGraphNode* Node);
 
@@ -24,6 +25,7 @@ struct FASCUtils
 	static TSharedPtr<SGraphPin> GetHoveredGraphPin(TSharedPtr<SGraphPanel> GraphPanel);
 
 	static TArray<UEdGraphNode_Comment*> GetSelectedComments(TSharedPtr<SGraphPanel> GraphPanel);
+	static TSet<UEdGraphNode*> GetSelectedNodes(TSharedPtr<SGraphPanel> GraphPanel, bool bExpandComments);
 
 	static bool IsGraphReadOnly(TSharedPtr<SGraphPanel> GraphPanel);
 

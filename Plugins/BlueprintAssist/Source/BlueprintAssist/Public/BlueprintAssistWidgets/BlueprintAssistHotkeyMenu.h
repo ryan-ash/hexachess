@@ -20,7 +20,7 @@ struct FBAHotkeyItem : IBAFilteredListItem
 
 	FBAHotkeyItem(TSharedPtr<FUICommandInfo> Command);
 
-	virtual FString ToString() const override { return CommandLabel.ToString(); }
+	virtual FString ToString() const override { return CommandLabel.ToString() + " " + CommandChord.ToString(); }
 };
 
 class BLUEPRINTASSIST_API SBAHotkeyMenu : public SCompoundWidget

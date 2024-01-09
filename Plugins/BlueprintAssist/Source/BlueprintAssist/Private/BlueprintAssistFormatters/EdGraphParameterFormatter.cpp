@@ -18,12 +18,10 @@ FEdGraphParameterFormatter::FEdGraphParameterFormatter(
 	TSharedPtr<FBAGraphHandler> InGraphHandler,
 	UEdGraphNode* InRootNode,
 	TSharedPtr<FEdGraphFormatter> InGraphFormatter,
-	UEdGraphNode* InNodeToKeepStill,
-	TArray<UEdGraphNode*> InIgnoredNodes)
+	UEdGraphNode* InNodeToKeepStill)
 	: GraphHandler(InGraphHandler)
 	, RootNode(InRootNode)
 	, GraphFormatter(InGraphFormatter)
-	, IgnoredNodes(InIgnoredNodes)
 	, NodeToKeepStill(InNodeToKeepStill)
 {
 	Padding = UBASettings::Get().BlueprintParameterPadding;
@@ -609,11 +607,20 @@ void FEdGraphParameterFormatter::FormatX()
 
 					if (InitialDirection == EGPD_Input && CurrentPinLink.GetDirection() == EGPD_Input && (FormattedInputNodes.Contains(ParentNode) || ParentNode == RootNode))
 					{
+						if (FormattedOutputNodes.Contains(CurrentNode))
+						{
+							FormattedOutputNodes.Remove(CurrentNode);
+						}
+
 						FormattedInputNodes.Add(CurrentNode);
 					}
+					
 					else if (InitialDirection == EGPD_Output && CurrentPinLink.GetDirection() == EGPD_Output && (FormattedOutputNodes.Contains(ParentNode) || ParentNode == RootNode))
 					{
-						FormattedOutputNodes.Add(CurrentNode);
+						if (!FormattedInputNodes.Contains(CurrentNode))
+						{
+							FormattedOutputNodes.Add(CurrentNode);
+						}
 					}
 
 					int32 NewNodePos = GetChildX(CurrentPinLink, ParentPin->Direction);
@@ -797,6 +804,12 @@ void FEdGraphParameterFormatter::FormatY(
 
 	for (EEdGraphPinDirection Direction : { EGPD_Input, EGPD_Output })
 	{
+		TArray<UEdGraphPin*> AllPins = FBAUtils::GetPinsByDirection(CurrentNode, Direction);
+		AllPins.StableSort([&GraphHandler = GraphHandler](const UEdGraphPin& A, const UEdGraphPin& B)
+		{
+			return GraphHandler->GetPinY(&A) < GraphHandler->GetPinY(&B);
+		});
+
 		UEdGraphPin* LastLinked = nullptr;
 
 		TArray<ChildBranch> ChildBranches;
@@ -838,6 +851,40 @@ void FEdGraphParameterFormatter::FormatY(
 			OutChildren.Append(LocalChildren);
 
 			ChildBranches.Add(ChildBranch(Link.To, Link.From, LocalChildren));
+
+			{
+				UEdGraphPin* PrevPin = nullptr;
+
+				// find last linked pin
+				for (int i = 0; i < AllPins.Num(); ++i)
+				{
+					UEdGraphPin* Pin = AllPins[i];
+
+					// avoid our incoming pin from the parent link
+					if (Link.From == Pin)
+					{
+						if (PrevPin)
+						{
+							LastLinked = PrevPin;
+						}
+
+						break;
+					}
+
+					if (Pin->LinkedTo.Num())
+					{
+						// can only have 1 input child
+						if (UEdGraphNode* LinkedNode = Pin->LinkedTo[0]->GetOwningNode())
+						{
+							// only avoid nodes which are not part of this branch
+							if (!LocalChildren.Contains(LinkedNode))
+							{
+								PrevPin = Pin;
+							}
+						}
+					}
+				}
+			}
 
 			// avoid last linked pin
 			if (!(bFormatWithHelixing && Direction == EGPD_Input) && LocalChildren.Num() > 0 && LastLinked != nullptr)

@@ -73,8 +73,24 @@ void SBASizeProgress::RenderGraphToBrush()
 	DrawWidgetToRenderTarget(GraphEditor);
 }
 
+bool SBASizeProgress::IsSnapshotValid() const
+{
+	UObject* ResourceObject = GraphSnapshotBrush.GetResourceObject();
+	if (ResourceObject != nullptr && (!IsValid(ResourceObject) || ResourceObject->IsUnreachable() || ResourceObject->HasAnyFlags(RF_BeginDestroyed)))
+	{
+		return false;
+	}
+
+	return true;
+}
+
 void SBASizeProgress::ShowOverlay()
 {
+	if (!UBASettings::Get().bShowOverlayWhenCachingNodes)
+	{
+		return;
+	}
+
 	if (bIsVisible)
 	{
 		return;
@@ -101,6 +117,9 @@ void SBASizeProgress::HideOverlay()
 	{
 		bIsVisible = false;
 		SetVisibility(EVisibility::Collapsed);
+
+		// clear the graph snapshot brush
+		GraphSnapshotBrush = FSlateBrush();
 	}
 }
 

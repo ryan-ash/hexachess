@@ -587,6 +587,11 @@ TArray<UEdGraphPin*> FBAUtils::GetLinkedToPinsIgnoringKnots(UEdGraphNode* InNode
 
 TArray<UEdGraphPin*> FBAUtils::GetPinLinkedToIgnoringKnots(const UEdGraphPin* InitialPin)
 {
+	if (!InitialPin)
+	{
+		return {};
+	}
+
 	TArray<const UEdGraphPin*> PendingPins = { InitialPin };
 	TArray<UEdGraphPin*> OutPins;
 	EEdGraphPinDirection Dir = InitialPin->Direction;
@@ -1453,105 +1458,6 @@ bool FBAUtils::TryCreateConnection(
 	const bool bTryHidden /*= false*/)
 {
 	return TryCreateConnection(PinA, PinB, bBreakLinks ? EBABreakMethod::Always : EBABreakMethod::Never, bConversionAllowed, bTryHidden);
-	if (!PinA || !PinB)
-	{
-		return false;
-	}
-
-	if (!bTryHidden && PinB->bHidden)
-	{
-		return false;
-	}
-
-	auto NodeA = PinA->GetOwningNodeUnchecked();
-	auto Schema = NodeA->GetGraph()->GetSchema();
-	const FPinConnectionResponse Response = Schema->CanCreateConnection(PinA, PinB);
-	bool bModified = false;
-
-	TArray<UEdGraphPin*> PreviouslyLinked = PinA->LinkedTo;
-
-	ECanCreateConnectionResponse NewResponse = Response.Response;
-
-	if (bBreakLinks)
-	{
-		if (Response.Response == CONNECT_RESPONSE_MAKE ||
-			Response.Response == CONNECT_RESPONSE_BREAK_OTHERS_A ||
-			Response.Response == CONNECT_RESPONSE_BREAK_OTHERS_B)
-		{
-			NewResponse = CONNECT_RESPONSE_BREAK_OTHERS_AB;
-		}
-	}
-	else
-	{
-		if (Response.Response == CONNECT_RESPONSE_BREAK_OTHERS_AB ||
-			Response.Response == CONNECT_RESPONSE_BREAK_OTHERS_A ||
-			Response.Response == CONNECT_RESPONSE_BREAK_OTHERS_B)
-		{
-			NewResponse = CONNECT_RESPONSE_DISALLOW;
-		}
-	}
-
-	switch (NewResponse)
-	{
-		case CONNECT_RESPONSE_MAKE:
-			PinA->Modify();
-			PinB->Modify();
-			PinA->MakeLinkTo(PinB);
-			bModified = true;
-			break;
-
-		case CONNECT_RESPONSE_BREAK_OTHERS_A:
-			PinA->Modify();
-			PinB->Modify();
-			PinA->BreakAllPinLinks();
-			PinA->MakeLinkTo(PinB);
-			bModified = true;
-			break;
-
-		case CONNECT_RESPONSE_BREAK_OTHERS_B:
-			PinA->Modify();
-			PinB->Modify();
-			PinB->BreakAllPinLinks();
-			PinA->MakeLinkTo(PinB);
-			bModified = true;
-			break;
-
-		case CONNECT_RESPONSE_BREAK_OTHERS_AB:
-		{
-			PinA->Modify();
-			PinB->Modify();
-			PinA->BreakAllPinLinks();
-			PinB->BreakAllPinLinks();
-
-			PinA->MakeLinkTo(PinB);
-
-			bModified = true;
-			break;
-		}
-		case CONNECT_RESPONSE_MAKE_WITH_CONVERSION_NODE:
-			if (bConversionAllowed)
-			{
-				bModified = Schema->CreateAutomaticConversionNodeAndConnections(PinA, PinB);
-			}
-			break;
-		case CONNECT_RESPONSE_DISALLOW:
-			break;
-		default:
-			break;
-	}
-
-#if WITH_EDITOR
-	if (bModified)
-	{
-		PinA->GetOwningNode()->PinConnectionListChanged(PinA);
-		PinB->GetOwningNode()->PinConnectionListChanged(PinB);
-
-		PinA->GetOwningNode()->NodeConnectionListChanged();
-		PinB->GetOwningNode()->NodeConnectionListChanged();
-	}
-#endif
-
-	return bModified;
 }
 
 bool FBAUtils::TryCreateConnection(UEdGraphPin* PinA, UEdGraphPin* PinB, EBABreakMethod BreakMethod, bool bConversionAllowed, bool bTryHidden)
@@ -1822,7 +1728,7 @@ float FBAUtils::StraightenPin(
 bool FBAUtils::ArePinsStraightened(TSharedPtr<FBAGraphHandler> GraphHandler, FPinLink& PinLink)
 {
 	UEdGraphPin* FromPin = PinLink.GetFromPin();
-	UEdGraphPin* ToPin = PinLink.GetFromPin();
+	UEdGraphPin* ToPin = PinLink.GetToPin();
 
 	if (!FromPin || !ToPin)
 	{
@@ -1851,6 +1757,18 @@ bool FBAUtils::ArePinsStraightened(TSharedPtr<FBAGraphHandler> GraphHandler, FPi
 	return false;
 }
 
+FSlateRect FBAUtils::GetGraphPanelBounds(TSharedPtr<SGraphPanel> GraphPanel)
+{
+	if (!GraphPanel)
+	{
+		return FSlateRect();
+	}
+
+	return FSlateRect(
+		PanelCoordToGraphCoord(GraphPanel, FVector2D::ZeroVector),
+		PanelCoordToGraphCoord(GraphPanel, GraphPanel->GetCachedGeometry().GetLocalSize()));
+}
+
 bool FBAUtils::IsNodeVisible(TSharedPtr<SGraphPanel> GraphPanel, UEdGraphNode* Node)
 {
 	if (!GraphPanel.IsValid())
@@ -1858,6 +1776,13 @@ bool FBAUtils::IsNodeVisible(TSharedPtr<SGraphPanel> GraphPanel, UEdGraphNode* N
 		return false;
 	}
 
+	const FSlateRect Bounds = GetGraphPanelBounds(GraphPanel);
+	if (!Bounds.ContainsPoint(FVector2D(Node->NodePosX, Node->NodePosY)))
+	{
+		return false;
+	}
+
+	// TODO for some reason this seems inaccurate, so we use this point check earlier
 	const FSlateRect NodeBounds = GetNodeBounds(Node);
 	return GraphPanel->IsRectVisible(NodeBounds.GetTopLeft(), NodeBounds.GetBottomRight());
 }
@@ -2258,6 +2183,97 @@ TSharedPtr<SGraphPin> FBAUtils::GetHoveredGraphPin(TSharedPtr<SGraphPanel> Graph
 	return nullptr;
 }
 
+TArray<TSharedPtr<SGraphPin>> FBAUtils::GetHoveredGraphPins(TSharedPtr<SGraphPanel> GraphPanel)
+{
+	TArray<TSharedPtr<SGraphPin>> OutPins;
+	if (!GraphPanel.IsValid())
+	{
+		return OutPins;
+	}
+
+	UEdGraph* Graph = GraphPanel->GetGraphObj();
+	if (Graph == nullptr)
+	{
+		return OutPins;
+	}
+
+	const bool bIsMaterialGraph = Graph->GetClass()->GetFName() == "MaterialGraph";
+	const bool bUseDirectlyHovered = UBASettings_Advanced::Get().bEnableMaterialGraphPinHoverFix && bIsMaterialGraph;
+
+	// check if graph pin "IsHovered" function
+	for (UEdGraphNode* Node : Graph->Nodes)
+	{
+		for (UEdGraphPin* Pin : Node->Pins)
+		{
+			if (!Pin->bHidden)
+			{
+				TSharedPtr<SGraphPin> GraphPin = GetGraphPin(GraphPanel, Pin);
+				if (GraphPin.IsValid())
+				{
+					// TODO: annoying bug where hover state can get locked if the panel is frozen and you move the cursor too fast
+					const bool bIsHovered = bUseDirectlyHovered ? GraphPin->IsDirectlyHovered() : GraphPin->IsHovered();
+					if (bIsHovered)
+					{
+						OutPins.Add(GraphPin);
+					}
+				}
+			}
+		}
+	}
+
+	return OutPins;
+}
+
+FPinLink FBAUtils::GetHoveredPinLink(TSharedPtr<SGraphPanel> GraphPanel)
+{
+	TArray<TSharedPtr<SGraphPin>> OutPins;
+	if (!GraphPanel.IsValid())
+	{
+		return FPinLink();
+	}
+
+	UEdGraph* Graph = GraphPanel->GetGraphObj();
+	if (Graph == nullptr)
+	{
+		return FPinLink();
+	}
+
+	UEdGraphPin* FirstPin = nullptr;
+
+	const bool bIsMaterialGraph = Graph->GetClass()->GetFName() == "MaterialGraph";
+	const bool bUseDirectlyHovered = UBASettings_Advanced::Get().bEnableMaterialGraphPinHoverFix && bIsMaterialGraph;
+
+	// check if graph pin "IsHovered" function
+	for (UEdGraphNode* Node : Graph->Nodes)
+	{
+		for (UEdGraphPin* Pin : Node->Pins)
+		{
+			if (!Pin->bHidden)
+			{
+				TSharedPtr<SGraphPin> GraphPin = GetGraphPin(GraphPanel, Pin);
+				if (GraphPin.IsValid())
+				{
+					// TODO: annoying bug where hover state can get locked if the panel is frozen and you move the cursor too fast
+					const bool bIsHovered = bUseDirectlyHovered ? GraphPin->IsDirectlyHovered() : GraphPin->IsHovered();
+					if (bIsHovered)
+					{
+						if (!FirstPin)
+						{
+							FirstPin = Pin;
+						}
+						else
+						{
+							return FPinLink(FirstPin, Pin);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return FPinLink(FirstPin, nullptr);
+}
+
 UEdGraphPin* FBAUtils::GetHoveredPin(TSharedPtr<SGraphPanel> GraphPanel)
 {
 	if (TSharedPtr<SGraphPin> GraphPin = GetHoveredGraphPin(GraphPanel))
@@ -2460,6 +2476,11 @@ FVector2D FBAUtils::GraphCoordToPanelCoord(
 	const FVector2D& GraphSpaceCoordinate)
 {
 	return (GraphSpaceCoordinate - GraphPanel->GetViewOffset()) * GraphPanel->GetZoomAmount();
+}
+
+FVector2D FBAUtils::PanelCoordToGraphCoord(TSharedPtr<SGraphPanel> GraphPanel, const FVector2D& PanelSpaceCoordinate)
+{
+	return (PanelSpaceCoordinate / GraphPanel->GetZoomAmount()) + GraphPanel->GetViewOffset();  
 }
 
 FVector2D FBAUtils::ScreenSpaceToPanelCoord(TSharedPtr<SGraphPanel> GraphPanel, const FVector2D& ScreenSpace)
@@ -3550,4 +3571,9 @@ bool FBAUtils::IsNodeBeingRenamed(TSharedPtr<SGraphNode> GraphNode)
 	}
 
 	return false;
+}
+
+EEdGraphPinDirection FBAUtils::GetOppositeDirection(EEdGraphPinDirection Direction)
+{
+	return UEdGraphPin::GetComplementaryDirection(Direction);
 }

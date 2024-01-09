@@ -60,6 +60,17 @@ struct ChildBranch
 	FString ToString() const;
 };
 
+struct FFPNodeExpandStruct
+{
+	FPinLink Link;
+	UEdGraphNode* NodeToAvoid;
+
+	bool operator==(const FFPNodeExpandStruct& Other) const
+	{
+		return Other.Link == Link && Other.NodeToAvoid == NodeToAvoid;
+	}
+};
+
 class FEdGraphFormatter final
 	: public FFormatterInterface
 {
@@ -149,13 +160,9 @@ private:
 
 	TMap<UEdGraphNode*, TSharedPtr<FEdGraphParameterFormatter>> ParameterParentMap;
 
-	TArray<TSharedPtr<FFormatXInfo>> NodesToExpand;
-
 	FNodeRelativeMapping NodeRelativeMapping;
 
 	FFormatterConnectionValidator ConnectionValidator;
-
-	void ExpandPendingNodes(bool bUseParameter);
 
 	void SimpleRelativeFormatting();
 
@@ -174,6 +181,19 @@ private:
 	void ExpandNodesAheadOfParameters();
 
 	void FormatX(bool bUseParameter);
+
+	void DecideXParents(
+		TArray<FPinLink> InitialLinks,
+		TSet<UEdGraphNode*>& VisitedNodes,
+		TSet<UEdGraphNode*>& ExpandedNodes,
+		TArray<FFPNodeExpandStruct>& WaitingToExpand,
+		bool bUseParameter);
+
+	UEdGraphNode* GetTopMostNodeToAvoid(FPinLink& Link, const TArray<FFPNodeExpandStruct>& WaitingToExpand);
+
+	TArray<FPinLink> ExpandX(const FPinLink& Link, UEdGraphNode* NodeToAvoid, bool bUseParameter);
+
+	TArray<FPinLink> GetNodesToExpand();
 
 	void FormatY_Recursive(
 		const FPinLink& CurrentLink,

@@ -9,6 +9,7 @@
 #include "K2Node_Knot.h"
 #include "BlueprintAssistFormatters/BlueprintAssistCommentHandler.h"
 #include "BlueprintAssistFormatters/FormatterInterface.h"
+#include "BlueprintAssistWidgets/BlueprintAssistGraphOverlay.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Stats/StatsMisc.h"
 
@@ -291,12 +292,12 @@ void FKnotTrackCreator::ExpandKnotTracks()
 			return TrackA->bIsLoopingTrack < TrackB->bIsLoopingTrack;
 		}
 
-		const bool bIsExecPinA = FBAUtils::IsExecOrDelegatePin(TrackA->GetLastPin());
-		const bool bIsExecPinB = FBAUtils::IsExecOrDelegatePin(TrackB->GetLastPin());
-		if (bIsExecPinA != bIsExecPinB)
-		{
-			return bIsExecPinA > bIsExecPinB;
-		}
+		// const bool bIsExecPinA = FBAUtils::IsExecOrDelegatePin(TrackA->GetLastPin());
+		// const bool bIsExecPinB = FBAUtils::IsExecOrDelegatePin(TrackB->GetLastPin());
+		// if (bIsExecPinA != bIsExecPinB)
+		// {
+		// 	return bIsExecPinA > bIsExecPinB;
+		// }
 
 		// if (bIsExecPinA && TrackA->bIsLoopingTrack != TrackB->bIsLoopingTrack)
 		// {
@@ -397,6 +398,11 @@ void FKnotTrackCreator::ExpandKnotTracks()
 				}
 
 				if (Track->bIsLoopingTrack != CurrentTrack->bIsLoopingTrack)
+				{
+					continue;
+				}
+
+				if (FBAUtils::IsExecPin(Track->GetParentPin()) != FBAUtils::IsExecPin(CurrentTrack->GetParentPin()))
 				{
 					continue;
 				}
@@ -534,9 +540,16 @@ void FKnotTrackCreator::ExpandKnotTracks()
 		// For looping tracks we need to move the parent nodes down so the track is above the nodes
 		if (CurrentTrack->bIsLoopingTrack)
 		{
+			float TrackOffsetY = FBAUtils::IsParameterPin(CurrentTrack->ParentPin.GetPin()) 
+				? UBASettings::Get().BlueprintParameterKnotSettings.LoopingOffset.Y
+				: UBASettings::Get().BlueprintExecutionKnotSettings.LoopingOffset.Y;
+
 			// UE_LOG(LogKnotTrackCreator, Warning, TEXT("Fix looping!"));
 			FSlateRect ExpandedBounds = AllGroup->GetBounds();
-			const float Padding = CurrentTrack->bIsLoopingTrack ? TrackSpacing * 2 : TrackSpacing;
+			const float Padding = CurrentTrack->bIsLoopingTrack
+				? (TrackSpacing * 2 + TrackOffsetY)
+				: TrackSpacing;
+
 			ExpandedBounds.Bottom += Padding;
 
 			TOptional<float> LoopingDelta;
@@ -649,6 +662,7 @@ void FKnotTrackCreator::ExpandKnotTracks()
 		const FSlateRect ContractedBounds = ExpandedBounds.InsetBy(FMargin(16, 0)); // contract bounds in x slightly
 		for (auto Track : AllGroup->Tracks)
 		{
+			// UE_LOG(LogTemp, Warning, TEXT("GROUP Collision checking track %s"), *Track->ToString());
 			for (UEdGraphNode* RelatedNode : Track->GetRelatedNodes())
 			{
 				// check bounds of each node for more accurate collision
@@ -692,12 +706,15 @@ void FKnotTrackCreator::ExpandKnotTracks()
 		// collide against nodes
 		for (UEdGraphNode* Node : Formatter->GetFormattedNodes())
 		{
+			// UE_LOG(LogKnotTrackCreator, Warning, TEXT("Collision check for node %s"), *FBAUtils::GetNodeName(Node));
 			bool bSkipNode = false;
-			for (TSharedPtr<FKnotNodeTrack> Track : PlacedTracks)
+			// for (TSharedPtr<FKnotNodeTrack> Track : PlacedTracks)
+			for (TSharedPtr<FKnotNodeTrack> Track : AllGroup->Tracks)
 			{
+				// UE_LOG(LogKnotTrackCreator, Warning, TEXT("\tAGAINST track %s"), *Track->ToString());
 				if (Node == Track->GetParentPin()->GetOwningNode() || Node == Track->GetLastPin()->GetOwningNode())
 				{
-					// UE_LOG(LogKnotTrackCreator, Warning, TEXT("Skipping node %s"), *FBAUtils::GetNodeName(Node));
+					// UE_LOG(LogKnotTrackCreator, Warning, TEXT("\t\tSkipping node %s"), *FBAUtils::GetNodeName(Node));
 					bSkipNode = true;
 					break;
 				}
@@ -706,7 +723,7 @@ void FKnotTrackCreator::ExpandKnotTracks()
 				{
 					if (Node == AlignedPin->GetOwningNode())
 					{
-						// UE_LOG(LogKnotTrackCreator, Warning, TEXT("Skipping node aligned %s"), *FBAUtils::GetNodeName(Node));
+						// UE_LOG(LogKnotTrackCreator, Warning, TEXT("\t\tSkipping node aligned %s"), *FBAUtils::GetNodeName(Node));
 						bSkipNode = true;
 						break;
 					}
@@ -719,11 +736,11 @@ void FKnotTrackCreator::ExpandKnotTracks()
 			}
 
 			const FSlateRect NodeBounds = GraphHandler->GetCachedNodeBounds(Node);
-			// UE_LOG(LogKnotTrackCreator, Warning, TEXT("Checking collision for %s | %s | %s"), *FBAUtils::GetNodeName(Node), *NodeBounds.ToString(), *ExpandedBounds.ToString());
+			// UE_LOG(LogKnotTrackCreator, Warning, TEXT("\t\tChecking collision for %s | %s | %s"), *FBAUtils::GetNodeName(Node), *NodeBounds.ToString(), *ExpandedBounds.ToString());
 
 			if (FSlateRect::DoRectanglesIntersect(NodeBounds, ExpandedBounds))
 			{
-				// UE_LOG(LogKnotTrackCreator, Warning, TEXT("\tCollision with %s"), *FBAUtils::GetNodeName(Node));
+				// UE_LOG(LogKnotTrackCreator, Warning, TEXT("\t\t\tCollision with %s"), *FBAUtils::GetNodeName(Node));
 				CollisionTop = CollisionTop.IsSet() ? FMath::Min(NodeBounds.Top, CollisionTop.GetValue()) : NodeBounds.Top;
 
 
@@ -1173,24 +1190,22 @@ TSharedPtr<FKnotNodeTrack> FKnotTrackCreator::MakeKnotTracksForLinkedExecPins(UE
 		}
 	}
 
+	const FVector2D& LoopingOffset = UBASettings::Get().BlueprintExecutionKnotSettings.LoopingOffset;
+
 	// create looping tracks
 	for (UEdGraphPin* OtherPin : LoopingPins)
 	{
-		const float OtherNodeTop = FBAUtils::GetNodeBounds(OtherPin->GetOwningNode()).Top;
-		const float MyNodeTop = FBAUtils::GetNodeBounds(ParentNode).Top;
-		const float AboveNodeWithPadding = FMath::Min(OtherNodeTop, MyNodeTop) - TrackSpacing * 2;
-
 		TArray<UEdGraphPin*> TrackPins = { OtherPin };
-		TSharedPtr<FKnotNodeTrack> KnotTrack = MakeShared<FKnotNodeTrack>(Formatter, GraphHandler, ParentPin, TrackPins, AboveNodeWithPadding, true);
+		TSharedPtr<FKnotNodeTrack> KnotTrack = MakeShared<FKnotNodeTrack>(Formatter, GraphHandler, ParentPin, TrackPins, true);
 		KnotTracks.Add(KnotTrack);
 
 		const FVector2D OtherPinPos = FBAUtils::GetPinPos(GraphHandler, OtherPin);
 
-		const FVector2D FirstKnotPos(ParentPinPos.X + 20, KnotTrack->GetTrackHeight());
+		const FVector2D FirstKnotPos(ParentPinPos.X + 20 + LoopingOffset.X, KnotTrack->GetTrackHeight());
 		TSharedPtr<FKnotNodeCreation> FirstLoopingKnot = MakeShared<FKnotNodeCreation>(KnotTrack, FirstKnotPos, nullptr, OtherPin);
 		KnotTrack->KnotCreations.Add(FirstLoopingKnot);
 
-		const FVector2D SecondKnotPos(OtherPinPos.X - 20, KnotTrack->GetTrackHeight());
+		const FVector2D SecondKnotPos(OtherPinPos.X - 20 - LoopingOffset.X, KnotTrack->GetTrackHeight());
 		TSharedPtr<FKnotNodeCreation> SecondLoopingKnot = MakeShared<FKnotNodeCreation>(KnotTrack, SecondKnotPos, FirstLoopingKnot, OtherPin);
 		KnotTrack->KnotCreations.Add(SecondLoopingKnot);
 	}
@@ -1255,7 +1270,7 @@ TSharedPtr<FKnotNodeTrack> FKnotTrackCreator::MakeKnotTracksForLinkedExecPins(UE
 		return nullptr;
 	}
 
-	TSharedPtr<FKnotNodeTrack> KnotTrack = MakeShared<FKnotNodeTrack>(Formatter, GraphHandler, ParentPin, LinkedPins, ParentPinPos.Y, false);
+	TSharedPtr<FKnotNodeTrack> KnotTrack = MakeShared<FKnotNodeTrack>(Formatter, GraphHandler, ParentPin, LinkedPins, false);
 
 	TryAlignTrackToEndPins(KnotTrack, Formatter->GetFormattedNodes().Array());
 
@@ -1283,9 +1298,11 @@ TSharedPtr<FKnotNodeTrack> FKnotTrackCreator::MakeKnotTracksForLinkedExecPins(UE
 
 	KnotTracks.Add(KnotTrack);
 
+	const float& OffsetX = UBASettings::Get().BlueprintExecutionKnotSettings.KnotXOffset;
+
 	// if the track is not at the same height as the pin, then we need an
 	// initial knot right of the inital pin, at the track height
-	const FVector2D MyKnotPos = FVector2D(ParentPinPos.X - NodePadding.X, KnotTrack->GetTrackHeight());
+	const FVector2D MyKnotPos = FVector2D(ParentPinPos.X - NodePadding.X - OffsetX, KnotTrack->GetTrackHeight());
 	TSharedPtr<FKnotNodeCreation> PreviousKnot = MakeShared<FKnotNodeCreation>(KnotTrack, MyKnotPos, nullptr, KnotTrack->GetParentPin());
 	KnotTrack->KnotCreations.Add(PreviousKnot);
 
@@ -1312,7 +1329,7 @@ TSharedPtr<FKnotNodeTrack> FKnotTrackCreator::MakeKnotTracksForLinkedExecPins(UE
 		ParentPin->BreakLinkTo(OtherPin);
 
 		const FVector2D OtherPinPos = FBAUtils::GetPinPos(GraphHandler, OtherPin);
-		float KnotX = FMath::Min(OtherPinPos.X + NodePadding.X, ParentPinPos.X - NodePadding.X);
+		float KnotX = FMath::Min(OtherPinPos.X + NodePadding.X + OffsetX, ParentPinPos.X - NodePadding.X - OffsetX);
 
 		// if (AtLeastX.IsSet())
 		// {
@@ -1346,6 +1363,47 @@ TSharedPtr<FKnotNodeTrack> FKnotTrackCreator::MakeKnotTracksForParameterPins(UEd
 	// UE_LOG(LogKnotTrackCreator, Warning, TEXT("Make knot tracks for parameter pin %s"), *FBAUtils::GetPinName(ParentPin));
 
 	FVector2D ParentPinPos = FBAUtils::GetPinPos(GraphHandler, ParentPin);
+
+	// check for looping pins, these are pins where 
+	// the x position of the pin is less than the x value of the parent pin
+	TArray<UEdGraphPin*> LoopingPins;
+	for (UEdGraphPin* LinkedPin : LinkedPins)
+	{
+		const FVector2D LinkedPinPos = FBAUtils::GetPinPos(GraphHandler, LinkedPin);
+		if (LinkedPinPos.X < ParentPinPos.X)
+		{
+			if (FBAUtils::IsNodeImpure(ParentPin->GetOwningNode()))
+			{
+				auto Bounds = FBAUtils::GetPinBounds(GraphHandler->GetGraphPanel(), LinkedPin);
+				GraphHandler->GetGraphOverlay()->DrawBounds(Bounds);
+			
+				// UE_LOG(LogTemp, Warning, TEXT("%s is looping"), *);
+				LoopingPins.Add(LinkedPin);
+			}
+		}
+	}
+
+	const FVector2D& LoopingOffset = UBASettings::Get().BlueprintParameterKnotSettings.LoopingOffset;
+
+	// create looping tracks
+	for (UEdGraphPin* OtherPin : LoopingPins)
+	{
+		TArray<UEdGraphPin*> TrackPins = { OtherPin };
+		TSharedPtr<FKnotNodeTrack> KnotTrack = MakeShared<FKnotNodeTrack>(Formatter, GraphHandler, ParentPin, TrackPins, true);
+		KnotTracks.Add(KnotTrack);
+
+		const FVector2D OtherPinPos = FBAUtils::GetPinPos(GraphHandler, OtherPin);
+
+		const FVector2D FirstKnotPos(ParentPinPos.X - 20 - LoopingOffset.X, KnotTrack->GetTrackHeight());
+		TSharedPtr<FKnotNodeCreation> FirstLoopingKnot = MakeShared<FKnotNodeCreation>(KnotTrack, FirstKnotPos, nullptr, OtherPin);
+		KnotTrack->KnotCreations.Add(FirstLoopingKnot);
+
+		const FVector2D SecondKnotPos(OtherPinPos.X + 20 + LoopingOffset.X, KnotTrack->GetTrackHeight());
+		TSharedPtr<FKnotNodeCreation> SecondLoopingKnot = MakeShared<FKnotNodeCreation>(KnotTrack, SecondKnotPos, FirstLoopingKnot, OtherPin);
+		KnotTrack->KnotCreations.Add(SecondLoopingKnot);
+	}
+
+	LinkedPins.RemoveAll([&LoopingPins](UEdGraphPin* Pin) { return LoopingPins.Contains(Pin); });
 
 	// remove pins which are left or too close to my pin
 	const float Threshold = ParentPinPos.X + NodePadding.X * 2.0f;
@@ -1401,7 +1459,7 @@ TSharedPtr<FKnotNodeTrack> FKnotTrackCreator::MakeKnotTracksForParameterPins(UEd
 	}
 
 	// init the knot track
-	TSharedPtr<FKnotNodeTrack> KnotTrack = MakeShared<FKnotNodeTrack>(Formatter, GraphHandler, ParentPin, LinkedPins, ParentPinPos.Y, false);
+	TSharedPtr<FKnotNodeTrack> KnotTrack = MakeShared<FKnotNodeTrack>(Formatter, GraphHandler, ParentPin, LinkedPins, false);
 
 	// check if the track height can simply be set to one of it's pin's height
 	if (TryAlignTrackToEndPins(KnotTrack, Formatter->GetFormattedNodes().Array()))
@@ -1430,8 +1488,10 @@ TSharedPtr<FKnotNodeTrack> FKnotTrackCreator::MakeKnotTracksForParameterPins(UEd
 		return nullptr;
 	}
 
+	const float& OffsetX = UBASettings::Get().BlueprintParameterKnotSettings.KnotXOffset;
+
 	// Add a knot creation which links to the parent pin
-	const FVector2D InitialKnotPos = FVector2D(ParentPinPos.X + PinPadding.X, KnotTrack->GetTrackHeight());
+	const FVector2D InitialKnotPos = FVector2D(ParentPinPos.X + PinPadding.X + OffsetX, KnotTrack->GetTrackHeight());
 	TSharedPtr<FKnotNodeCreation> PreviousKnot = MakeShared<FKnotNodeCreation>(KnotTrack, InitialKnotPos, nullptr, KnotTrack->GetParentPin());
 	ParentPin->BreakLinkTo(KnotTrack->GetLastPin());
 	KnotTrack->KnotCreations.Add(PreviousKnot);
@@ -1444,7 +1504,7 @@ TSharedPtr<FKnotNodeTrack> FKnotTrackCreator::MakeKnotTracksForParameterPins(UEd
 		ParentPin->BreakLinkTo(OtherPin);
 
 		const FVector2D OtherPinPos = FBAUtils::GetPinPos(GraphHandler, OtherPin);
-		const float KnotX = FMath::Max(OtherPinPos.X - PinPadding.X, ParentPinPos.X + PinPadding.X);
+		const float KnotX = FMath::Max(OtherPinPos.X - PinPadding.X - OffsetX, ParentPinPos.X + PinPadding.X + OffsetX);
 
 		const FVector2D KnotPos = FVector2D(KnotX, KnotTrack->GetTrackHeight());
 

@@ -130,7 +130,7 @@ UBASettings::UBASettings(const FObjectInitializer& ObjectInitializer)
 	FBAFormatterSettings MaterialGraphSettings(
 		DefaultFormatterPaddingSize,
 		EBAAutoFormatting::Never,
-		EGPD_Output,
+		EGPD_Input,
 		{ "MaterialGraphNode_Root" }
 	);
 	NonBlueprintFormatterSettings.Add("MaterialGraph", MaterialGraphSettings);
@@ -147,7 +147,7 @@ UBASettings::UBASettings(const FObjectInitializer& ObjectInitializer)
 	FBAFormatterSettings NiagaraSettings;
 	NiagaraSettings.Padding = DefaultFormatterPaddingSize;
 	NiagaraSettings.AutoFormatting = EBAAutoFormatting::FormatAllConnected;
-	NiagaraSettings.FormatterDirection = EGPD_Input;
+	NiagaraSettings.FormatterDirection = EGPD_Output;
 	NiagaraSettings.RootNodes = { "NiagaraNodeInput" };
 	NiagaraSettings.ExecPinName = "NiagaraParameterMap";
 
@@ -159,15 +159,21 @@ UBASettings::UBASettings(const FObjectInitializer& ObjectInitializer)
 
 	// TODO: Reenable support for control rig after fixing issues
 	FBAFormatterSettings ControlRigSettings;
+
+#if BA_UE_VERSION_OR_LATER(5, 3)
+	ControlRigSettings.ExecPinName = "RigVMExecuteContext";
+#else
+	ControlRigSettings.ExecPinName = "ControlRigExecuteContext";
+#endif
+
 #if BA_UE_VERSION_OR_LATER(5, 0)
 	ControlRigSettings.bEnabled = true;
 #else
 	ControlRigSettings.bEnabled = false;
 #endif
 	ControlRigSettings.Padding = DefaultFormatterPaddingSize;
-	ControlRigSettings.AutoFormatting = EBAAutoFormatting::FormatAllConnected;
+	ControlRigSettings.AutoFormatting = EBAAutoFormatting::Never;
 	ControlRigSettings.FormatterDirection = EGPD_Output;
-	ControlRigSettings.ExecPinName = "ControlRigExecuteContext";
 	NonBlueprintFormatterSettings.Add("ControlRigGraph", ControlRigSettings);
 
 	FBAFormatterSettings MetaSoundSettings(
@@ -453,6 +459,11 @@ FBAFormatterSettings UBASettings::GetFormatterSettings(UEdGraph* Graph)
 
 FBAFormatterSettings* UBASettings::FindFormatterSettings(UEdGraph* Graph)
 {
+	if (!Graph)
+	{
+		return nullptr;
+	}
+
 	UBASettings& BASettings = GetMutable();
 
 	if (FBAFormatterSettings* FoundSettings = BASettings.NonBlueprintFormatterSettings.Find(Graph->GetClass()->GetFName()))

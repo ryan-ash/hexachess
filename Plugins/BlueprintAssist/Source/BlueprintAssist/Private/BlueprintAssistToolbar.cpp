@@ -535,9 +535,12 @@ void FBAToolbar::MakeToolsSubMenu(FMenuBuilder& InMenuBuilder)
 {
 	InMenuBuilder.BeginSection("BlueprintAssistTools", INVTEXT("Tools"));
 	{
-		if (FBAUtils::GetCurrentGraphHandler())
+		if (auto GH = FBAUtils::GetCurrentGraphHandler())
 		{
-			InMenuBuilder.AddMenuEntry(FBAToolbarCommands::Get().DetectUnusedNodes);
+			if (FBAUtils::IsBlueprintGraph(GH->GetFocusedEdGraph()))
+			{
+				InMenuBuilder.AddMenuEntry(FBAToolbarCommands::Get().DetectUnusedNodes);
+			}
 		}
 	}
 	InMenuBuilder.EndSection();

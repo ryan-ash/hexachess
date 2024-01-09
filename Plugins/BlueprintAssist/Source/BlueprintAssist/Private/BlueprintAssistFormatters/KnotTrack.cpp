@@ -106,7 +106,6 @@ FKnotNodeTrack::FKnotNodeTrack(
 	TSharedPtr<FBAGraphHandler> InGraphHandler,
 	UEdGraphPin* InParentPin,
 	TArray<UEdGraphPin*> InLinkedTo,
-	float InTrackY,
 	bool bInIsLoopingTrack)
 	: GraphHandler(InGraphHandler)
 	, ParentPin(InParentPin)
@@ -196,7 +195,7 @@ void FKnotNodeTrack::SetTrackHeight(TSharedPtr<FFormatterInterface> Formatter)
 		for (UEdGraphNode* NodeToCollisionCheck : AllNodes)
 		{
 			FSlateRect NodeBounds = FBAUtils::GetCachedNodeBounds(GraphHandler, NodeToCollisionCheck).ExtendBy(FMargin(0, TrackSpacing - 1));
-	
+
 			const bool bSkipNode = NodeToCollisionCheck == GetParentPin()->GetOwningNode() || NodeToCollisionCheck == LastPin->GetOwningNode();
 			if (!bSkipNode)
 			{

@@ -12,6 +12,7 @@ struct FASCPinChangeData
 	bool bPinHidden;
 	FString PinValue;
 	FText PinTextValue;
+	FText PinLabel;
 	FString PinObject;
 
 	FASCPinChangeData() = default;
@@ -21,6 +22,8 @@ struct FASCPinChangeData
 	bool HasPinChanged(UEdGraphPin* Pin);
 
 	FString GetPinDefaultObjectName(UEdGraphPin* Pin) const;
+
+	FText GetPinLabel(UEdGraphPin* Pin) const;
 };
 
 
@@ -54,6 +57,7 @@ public:
 
 class FASCCommentChangeData
 {
+	FString NodeComment;
 	TMap<TWeakObjectPtr<UEdGraphNode>, FASCNodeChangeData> NodeChangeData;
 
 public:

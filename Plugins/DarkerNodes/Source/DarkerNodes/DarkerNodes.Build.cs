@@ -48,6 +48,7 @@ public class DarkerNodes : ModuleRules
 				"HierarchicalLODUtilities",
 				"ApplicationCore",
 				"WebBrowser",
+				"SettingsEditor",
 			}
 		);
 

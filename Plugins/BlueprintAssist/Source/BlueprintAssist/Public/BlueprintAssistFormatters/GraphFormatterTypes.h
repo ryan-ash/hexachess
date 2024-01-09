@@ -165,9 +165,12 @@ struct BLUEPRINTASSIST_API FFormatXInfo
 {
 	FPinLink Link;
 	TSharedPtr<FFormatXInfo> Parent;
+	UEdGraphNode* Node;
 	bool bSameRowAsParent = false;
+	bool bRootNode = false;
 	TArray<TSharedPtr<FFormatXInfo>> Children;
 
+	FFormatXInfo(UEdGraphNode* InNode) { Node = InNode; }
 	FFormatXInfo(const FPinLink& InLink, TSharedPtr<FFormatXInfo> InParent);
 
 	UEdGraphNode* GetNode() const;
@@ -179,10 +182,13 @@ struct BLUEPRINTASSIST_API FFormatXInfo
 	TArray<UEdGraphNode*> GetImmediateChildren() const;
 
 	TArray<TSharedPtr<FFormatXInfo>>& GetChildInfos() { return Children; }
+	TArray<TSharedPtr<FFormatXInfo>> GetAllChildren(EEdGraphPinDirection Direction = EGPD_MAX);
+	TArray<TSharedPtr<FFormatXInfo>> GetAllChildrenWithFilter(TFunctionRef<bool(TSharedPtr<FFormatXInfo>)> Filter, EEdGraphPinDirection Direction = EGPD_MAX);
 
 	TArray<FPinLink> GetChildrenAsLinks(EEdGraphPinDirection Direction = EGPD_MAX) const;
 
 	void SetParent(TSharedPtr<FFormatXInfo> NewParent);
+	void SetParentNew(TSharedPtr<FFormatXInfo> NewParent, FPinLink NewLink);
 
 	TSharedPtr<FFormatXInfo> GetRootParent();
 

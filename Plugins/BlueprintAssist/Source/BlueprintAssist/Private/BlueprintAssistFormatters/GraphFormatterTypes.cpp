@@ -285,6 +285,12 @@ void FFormatXInfo::SetParent(TSharedPtr<FFormatXInfo> NewParent)
 	Parent = NewParent;
 }
 
+void FFormatXInfo::SetParentNew(TSharedPtr<FFormatXInfo> NewParent, FPinLink NewLink)
+{
+	SetParent(NewParent);
+	Link = NewLink;
+}
+
 TArray<UEdGraphNode*> FFormatXInfo::GetChildren(EEdGraphPinDirection Direction, bool bInitialDirectionOnly) const
 {
 	TArray<UEdGraphNode*> OutChildren;
@@ -300,7 +306,7 @@ TArray<UEdGraphNode*> FFormatXInfo::GetChildren(EEdGraphPinDirection Direction, 
 		TSharedPtr<FFormatXInfo> CurrentInfo = PendingInfo.Pop();
 		if (OutChildren.Contains(CurrentInfo->GetNode()))
 		{
-			break;
+			continue;
 		}
 
 		OutChildren.Push(CurrentInfo->GetNode());
@@ -356,6 +362,75 @@ TArray<UEdGraphNode*> FFormatXInfo::GetImmediateChildren() const
 		OutChildren.Add(Child->GetNode());
 	}
 	return OutChildren;
+}
+
+TArray<TSharedPtr<FFormatXInfo>> FFormatXInfo::GetAllChildren(EEdGraphPinDirection Direction)
+{
+	TSet<TSharedPtr<FFormatXInfo>> OutChildren;
+
+	const auto& FilterByDirection = [Direction](TSharedPtr<FFormatXInfo> Info)
+	{
+		return Info->Link.GetDirection() == Direction || Direction == EGPD_MAX;
+	};
+
+	TArray<TSharedPtr<FFormatXInfo>> PendingInfo = Children.FilterByPredicate(FilterByDirection);
+
+	while (PendingInfo.Num() > 0)
+	{
+		TSharedPtr<FFormatXInfo> CurrentInfo = PendingInfo.Pop();
+		if (!FilterByDirection(CurrentInfo))
+		{
+			continue;
+		}
+
+		if (OutChildren.Contains(CurrentInfo))
+		{
+			UE_LOG(LogBlueprintAssist, Error, TEXT("FFormatXInfo::GetAllChildren - Detected child loop"));
+			continue;
+		}
+
+		OutChildren.Add(CurrentInfo);
+		PendingInfo.Append(CurrentInfo->GetChildInfos());
+	}
+
+	return OutChildren.Array();
+}
+
+TArray<TSharedPtr<FFormatXInfo>> FFormatXInfo::GetAllChildrenWithFilter(TFunctionRef<bool(TSharedPtr<FFormatXInfo>)> Filter, EEdGraphPinDirection Direction)
+{
+	TSet<TSharedPtr<FFormatXInfo>> OutChildren;
+
+	const auto& FilterByDirection = [Direction](TSharedPtr<FFormatXInfo> Info)
+	{
+		return Info->Link.GetDirection() == Direction || Direction == EGPD_MAX;
+	};
+
+	TArray<TSharedPtr<FFormatXInfo>> PendingInfo = Children.FilterByPredicate(FilterByDirection);
+
+	while (PendingInfo.Num() > 0)
+	{
+		TSharedPtr<FFormatXInfo> CurrentInfo = PendingInfo.Pop();
+		if (!FilterByDirection(CurrentInfo))
+		{
+			continue;
+		}
+
+		if (!Filter(CurrentInfo))
+		{
+			continue;
+		}
+
+		if (OutChildren.Contains(CurrentInfo))
+		{
+			UE_LOG(LogTemp, Error, TEXT("DETECTED CHILDREN LOOP"));
+			continue;
+		}
+
+		OutChildren.Add(CurrentInfo);
+		PendingInfo.Append(CurrentInfo->GetChildInfos());
+	}
+
+	return OutChildren.Array();
 }
 
 TArray<FPinLink> FFormatXInfo::GetChildrenAsLinks(EEdGraphPinDirection Direction) const

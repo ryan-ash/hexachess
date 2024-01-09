@@ -96,17 +96,21 @@ public:
 	/// General
 	////////////////////////////////////////////////////////////
 
-	/* When creating a new node from a parameter pin, try to connect the execution */
+	/* Try to insert the node between any current wires when holding down this key */
 	UPROPERTY(EditAnywhere, config, Category = "General | New Node Behaviour")
-	bool bConnectExecutionWhenDraggingOffParameter;
+	FInputChord InsertNewNodeKeyChord;
 
-	/* When creating an executable (impure) node from a pin, try to insert the node between existing wires */
+	/* When creating a new node from a parameter pin, always try to connect the execution. Holding InsertNewNodeChord will disable this. */
 	UPROPERTY(EditAnywhere, config, Category = "General | New Node Behaviour")
-	bool bInsertNewExecutionNodes;
+	bool bAlwaysConnectExecutionFromParameter;
 
-	/* When creating a pure (parameter) node from a pin, try to insert the node between existing wires */
+	/* When creating a new node from a parameter pin, always try to insert between wires. Holding InsertNewNodeChord will disable this. */
 	UPROPERTY(EditAnywhere, config, Category = "General | New Node Behaviour")
-	bool bInsertNewPureNodes;
+	bool bAlwaysInsertFromParameter;
+
+	/* When creating a new node from an execution pin, always try to insert between wires. Holding InsertNewNodeChord will disable this. */
+	UPROPERTY(EditAnywhere, config, Category = "General | New Node Behaviour")
+	bool bAlwaysInsertFromExecution;
 
 	FORCEINLINE static const UBASettings_EditorFeatures& Get() { return *GetDefault<UBASettings_EditorFeatures>(); }
 	FORCEINLINE static UBASettings_EditorFeatures& GetMutable() { return *GetMutableDefault<UBASettings_EditorFeatures>(); }

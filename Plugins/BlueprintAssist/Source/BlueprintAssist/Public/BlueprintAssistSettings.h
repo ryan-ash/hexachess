@@ -94,6 +94,20 @@ enum class EBAFunctionAccessSpecifier : uint8
 };
 
 USTRUCT()
+struct FBAKnotTrackSettings
+{
+	GENERATED_BODY()
+
+	/* Knot nodes x-offset for regular execution wires */
+	UPROPERTY(EditAnywhere, config, Category = "BlueprintFormatting")
+	float KnotXOffset = 0.0f;
+
+	/* Knot node offset for wires that flow backwards in execution */
+	UPROPERTY(EditAnywhere, config, Category = "BlueprintFormatting")
+	FVector2D LoopingOffset = FVector2D(0, 0);
+};
+
+USTRUCT()
 struct FBAFormatterSettings
 {
 	GENERATED_BODY()
@@ -322,6 +336,14 @@ public:
 	/* Padding used between parameter nodes */
 	UPROPERTY(EditAnywhere, config, Category = BlueprintFormatting)
 	FVector2D BlueprintParameterPadding;
+
+	/* Offsets for execution knot tracks */
+	UPROPERTY(EditAnywhere, config, AdvancedDisplay, Category = BlueprintFormatting)
+	FBAKnotTrackSettings BlueprintExecutionKnotSettings;
+
+	/* Offsets for parameter knot tracks */
+	UPROPERTY(EditAnywhere, config, AdvancedDisplay, Category = BlueprintFormatting)
+	FBAKnotTrackSettings BlueprintParameterKnotSettings;
 
 	/* Blueprint formatting will be used for these types of graphs (you can see the type of a graph with the PrintGraphInfo command, default: unbound) */
 	UPROPERTY(EditAnywhere, config, AdvancedDisplay, Category = BlueprintFormatting)

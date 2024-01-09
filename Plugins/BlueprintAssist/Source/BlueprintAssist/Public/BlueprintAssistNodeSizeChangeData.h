@@ -14,6 +14,7 @@ struct FBAPinChangeData
 	bool bPinHidden;
 	FString PinValue;
 	FText PinTextValue;
+	FText PinLabel;
 	FString PinObject;
 
 	FBAPinChangeData() = default;
@@ -23,6 +24,8 @@ struct FBAPinChangeData
 	bool HasPinChanged(UEdGraphPin* Pin);
 
 	FString GetPinDefaultObjectName(UEdGraphPin* Pin) const;
+
+	FText GetPinLabel(UEdGraphPin* Pin) const;
 };
 
 
@@ -49,6 +52,7 @@ class FBANodeSizeChangeData
 	bool AdvancedPinDisplay;
 	ENodeEnabledState NodeEnabledState;
 	FName DelegateFunctionName;
+	FString PropertyAccessTextPath;
 
 public:
 	FBANodeSizeChangeData(UEdGraphNode* Node);
@@ -56,4 +60,6 @@ public:
 	void UpdateNode(UEdGraphNode* Node);
 
 	bool HasNodeChanged(UEdGraphNode* Node);
+
+	FString GetPropertyAccessTextPath(UEdGraphNode* Node);
 };

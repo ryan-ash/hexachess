@@ -70,10 +70,14 @@ public:
 	void GroupMoveSelectedNodes(const FVector2D& Delta);
 	void GroupMoveNodes(const FVector2D& Delta, TSet<UEdGraphNode*>& Nodes);
 
-	TSet<FKey> KeysDown;
-	TMap<FKey, double> KeysDownStartTime;
-
 	FBANodeMovementTransaction DragNodeTransaction;
+
+	bool IsInputChordDown(const FInputChord& Chord);
+	bool IsAnyInputChordDown(const TArray<FInputChord>& Chords);
+	bool IsInputChordDown(const FInputChord& Chord, const FKey Key);
+	bool IsAnyInputChordDown(const TArray<FInputChord>& Chords, const FKey Key);
+	bool IsKeyDown(const FKey Key);
+	double GetKeyDownDuration(const FKey Key);
 
 private:
 	FBAGlobalActions GlobalActions;
@@ -87,23 +91,14 @@ private:
 
 	TArray<FAssetData> CutAssets;
 
+	TSet<FKey> KeysDown;
+	TMap<FKey, double> KeysDownStartTime;
+
 	FBAInputProcessor();
 
 #if ENGINE_MINOR_VERSION >= 26 || ENGINE_MAJOR_VERSION >= 5
 	virtual const TCHAR* GetDebugName() const override { return TEXT("BlueprintAssistInputProcessor"); }
 #endif
-
-	bool IsInputChordDown(const FInputChord& Chord);
-
-	bool IsAnyInputChordDown(const TArray<FInputChord>& Chords);
-
-	bool IsInputChordDown(const FInputChord& Chord, const FKey Key);
-
-	bool IsAnyInputChordDown(const TArray<FInputChord>& Chords, const FKey Key);
-
-	bool IsKeyDown(const FKey Key);
-
-	double GetKeyDownDuration(const FKey Key);
 
 	bool ProcessFolderBookmarkInput();
 

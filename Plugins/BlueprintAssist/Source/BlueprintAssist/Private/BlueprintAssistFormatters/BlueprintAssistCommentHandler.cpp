@@ -63,7 +63,7 @@ void FCommentHandler::BuildTree()
 			TSharedPtr<FBACommentContainsNode> ContainsNode = MasterContainsGraph->GetNode(Comment);
 			const TArray<UEdGraphNode*>& NodesUnderComment = GetMasterContainsGraph()->GetNode(Comment)->AllContainedNodes;
 
-			if (Formatter->ShouldIgnoreComment(ContainsNode))
+			if (ContainsNode->AllContainedNodes.Num() == 0 || Formatter->ShouldIgnoreComment(ContainsNode))
 			{
 				CommentNodes.RemoveAt(i);
 				IgnoredComments.Add(Comment);

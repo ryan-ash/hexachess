@@ -11,6 +11,16 @@
 #include "AutoSizeCommentsSettings.generated.h"
 
 UENUM()
+enum class EASCCacheSaveMethod : uint8
+{
+	/** Save the cache to an external json file */
+	File UMETA(DisplayName = "File"),
+
+	/** Save to cache in the package's meta data (the .uasset) */
+	MetaData UMETA(DisplayName = "Package Meta Data"),
+};
+
+UENUM()
 enum class EASCCacheSaveLocation : uint8
 {
 	/** Save to PluginFolder/ASCCache/PROJECT_ID.json */
@@ -50,8 +60,13 @@ enum class ECommentCollisionMethod : uint8
 UENUM()
 enum class EASCAutoInsertComment : uint8
 {
+	/** Never insert new nodes into comments */
 	Never UMETA(DisplayName = "Never"),
+
+	/** Insert new nodes when a node is created from a pin */
 	Always UMETA(DisplayName = "Always"),
+
+	/** Insert new nodes when a node is created from a pin (and is surrounded by multiple nodes inside the comment) */
 	Surrounded UMETA(DisplayName = "Surrounded"),
 };
 
@@ -101,11 +116,11 @@ public:
 	UAutoSizeCommentsSettings(const FObjectInitializer& ObjectInitializer);
 
 	/** The default font size for comment boxes */
-	UPROPERTY(EditAnywhere, config, Category = FontSize)
+	UPROPERTY(EditAnywhere, config, Category = UI)
 	int DefaultFontSize;
 
 	/** If enabled, all nodes will be changed to the default font size (unless they are a preset or floating node) */
-	UPROPERTY(EditAnywhere, config, Category = FontSize)
+	UPROPERTY(EditAnywhere, config, Category = UI)
 	bool bUseDefaultFontSize;
 
 	UPROPERTY(EditAnywhere, Config, Category = Color)
@@ -146,6 +161,10 @@ public:
 	/** Preset style that will apply if the title starts with the according prefix */
 	UPROPERTY(EditAnywhere, config, Category = Styles)
 	TMap<FString, FPresetCommentStyle> TaggedPresets;
+
+	/** The title bar uses a minimal style when being edited (requires UE5 or later) */
+	UPROPERTY(EditAnywhere, config, Category = "UI")
+	bool bUseMinimalTitlebarStyle = false;
 
 	/** Always hide the comment bubble */
 	UPROPERTY(EditAnywhere, config, Category = CommentBubble)
@@ -207,13 +226,13 @@ public:
 	UPROPERTY(EditAnywhere, config, Category = Misc)
 	float EmptyCommentBoxSpeed;
 
-	/** Choose cache save location: project or plugin folder */
+	/** Choose cache save method: as an external file or inside the package's metadata */
 	UPROPERTY(EditAnywhere, config, Category = CommentCache)
-	EASCCacheSaveLocation CacheSaveLocation;
+	EASCCacheSaveMethod CacheSaveMethod;
 
-	/** If enabled, nodes inside comments will be saved to a cache file */
-	UPROPERTY(EditAnywhere, config, Category = CommentCache)
-	bool bSaveCommentNodeDataToFile;
+	/** Choose where to save the json file: project or plugin folder */
+	UPROPERTY(EditAnywhere, config, Category = CommentCache, meta = (EditCondition = "CacheSaveMethod == EASCCacheSaveMethod::File", EditConditionHides))
+	EASCCacheSaveLocation CacheSaveLocation;
 
 	/** If enabled, nodes will be saved to file when the graph is saved */
 	UPROPERTY(EditAnywhere, config, Category = CommentCache, meta = (EditCondition = "bSaveCommentNodeDataToFile"))
@@ -222,9 +241,9 @@ public:
 	/** If enabled, nodes will be saved to file when the program is exited */
 	UPROPERTY(EditAnywhere, config, Category = CommentCache, meta = (EditCondition = "bSaveCommentNodeDataToFile"))
 	bool bSaveCommentDataOnExit;
-	
+
 	/** If enabled, cache file JSON text will be made more human-readable, but increases file size */
-	UPROPERTY(EditAnywhere, config, Category = CommentCache, AdvancedDisplay, meta = (EditCondition = "bSaveCommentNodeDataToFile"))
+	UPROPERTY(EditAnywhere, config, Category = CommentCache, AdvancedDisplay)
 	bool bPrettyPrintCommentCacheJSON;
 
 	/** Commments will detect and add nodes are underneath on creation */
@@ -279,6 +298,10 @@ public:
 	UPROPERTY(EditAnywhere, config, Category = Misc)
 	bool bHighlightContainingNodesOnSelection;
 
+	/** Force the graph panel to use the 1:1 LOD for nodes (UE 5.0+) */
+	UPROPERTY(EditAnywhere, config, Category = Misc)
+	bool bUseMaxDetailNodes;
+
 	/** Do not use ASC node for these graphs, turn on DebugClass_ASC and open graph to find graph class name */
 	UPROPERTY(EditAnywhere, config, Category = Misc, AdvancedDisplay)
 	TArray<FString> IgnoredGraphs;
@@ -330,10 +353,6 @@ public:
 	/** Experimental fix for sort depth issue in UE5 (unable to move nested nodes until you compile the blueprint) */
 	UPROPERTY(EditAnywhere, config, Category = Experimental)
 	bool bEnableFixForSortDepthIssue;
-
-	/** Experimental setting to store cache data in the Package's MetaData */
-	UPROPERTY(EditAnywhere, config, Category = Experimental)
-	bool bStoreCacheDataInPackageMetaData;
 
 	/** Print info about the graph when opening a graph */
 	UPROPERTY(EditAnywhere, config, Category = Debug)

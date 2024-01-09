@@ -20,7 +20,7 @@ void DNUpdatePopup::Register()
 {
 	const FString PluginDirectory = IPluginManager::Get().FindPlugin(TEXT("DarkerNodes"))->GetBaseDir();
 	const FString UpdatedConfigFile = PluginDirectory + "/UpdateConfig.ini";
-	const FString CurrentPluginVersion = "3.3";
+	const FString CurrentPluginVersion = "3.4";
 
 	UDNUpdateConfig* DNUpdatePopupConfig = GetMutableDefault<UDNUpdateConfig>();
 
@@ -79,7 +79,7 @@ void DNUpdatePopup::Open()
 		[
 			SNew(STextBlock)
 			.Font(HeadingFont)
-			.Text(FText::FromString("Darker Nodes v3.3"))
+			.Text(FText::FromString("Darker Nodes v3.4"))
 		]
 		+ SVerticalBox::Slot()
 		  .FillHeight(1.0)
@@ -100,7 +100,15 @@ First thing first, if you've been enjoying using it, it would mean a lot if you 
 
 I also made a marketplace search engine called <a id="browser" href="https://bit.ly/3uhO9CG">Orbital Market</>. It's completely free, super fast and full of filters to refine your search.
 					
-But let's keep it short, here are the cool new features (and bugfixes) of version 3.3!
+But let's keep it short, here are the cool new features (and bugfixes) of version 3.4!
+
+
+<LargeText>Version 3.4</>
+
+<RichTextBlock.Bold>Bugfixes</>
+
+* Fix 5.3 compatibility (<a id="browser" href="https://github.com/hugoattal/ElectronicNodes/issues/181">issue #181</>)
+
 
 <LargeText>Version 3.3</>
 
@@ -119,16 +127,6 @@ But let's keep it short, here are the cool new features (and bugfixes) of versio
 
 * Fix dark background for blueprint comments (<a id="browser" href="https://github.com/hugoattal/DarkerNodes/issues/167">issue #167</>)
 
-					
-<LargeText>Version 3.1</>
-
-<RichTextBlock.Bold>Features</>
-
-* Add missing Mac and Linux support (in UE5) (<a id="browser" href="https://github.com/hugoattal/DarkerNodes/issues/164">issue #164</>)
-
-<RichTextBlock.Bold>Bugfixes</>
-
-* Fix Behavior tree node highlight with extended nodes (<a id="browser" href="https://github.com/hugoattal/DarkerNodes/issues/162">issue #162</>)
 
 <a id="browser" href="https://github.com/hugoattal/DarkerNodes#changelog">See complete changelog</>
 )"))

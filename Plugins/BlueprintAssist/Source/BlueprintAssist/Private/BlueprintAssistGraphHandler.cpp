@@ -10,7 +10,6 @@
 #include "BlueprintAssistSettings_EditorFeatures.h"
 #include "BlueprintAssistStats.h"
 #include "BlueprintAssistUtils.h"
-#include "BlueprintEditor.h"
 #include "EdGraphNode_Comment.h"
 #include "K2Node_AssignDelegate.h"
 #include "K2Node_CallParentFunction.h"
@@ -21,12 +20,12 @@
 #include "ScopedTransaction.h"
 #include "SGraphPanel.h"
 #include "Algo/Transform.h"
-#include "BlueprintAssistWidgets/BlueprintAssistGraphOverlay.h"
-#include "BlueprintAssistWidgets/SBASizeProgress.h"
 #include "BlueprintAssistFormatters/BAFormatterUtils.h"
 #include "BlueprintAssistFormatters/BehaviorTreeGraphFormatter.h"
 #include "BlueprintAssistFormatters/EdGraphFormatter.h"
 #include "BlueprintAssistFormatters/SimpleFormatter.h"
+#include "BlueprintAssistWidgets/BlueprintAssistGraphOverlay.h"
+#include "BlueprintAssistWidgets/SBASizeProgress.h"
 #include "Editor/BlueprintGraph/Classes/K2Node_Knot.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Framework/Notifications/NotificationManager.h"
@@ -192,15 +191,7 @@ void FBAGraphHandler::OnGainFocus()
 
 void FBAGraphHandler::OnLoseFocus()
 {
-	if (CachingNotification.IsValid())
-	{
-		CachingNotification.Pin()->Fadeout();
-	}
-
-	if (SizeTimeoutNotification.IsValid())
-	{
-		SizeTimeoutNotification.Pin()->Fadeout();
-	}
+	CancelActiveFormatting();
 }
 
 void FBAGraphHandler::Cleanup()
@@ -214,7 +205,6 @@ void FBAGraphHandler::Cleanup()
 	}
 
 	FormatterParameters.Reset();
-	ResetTransactions();
 	FormatterMap.Reset();
 	NodeToReplace = nullptr;
 	bLerpViewport = false;
@@ -225,15 +215,7 @@ void FBAGraphHandler::Cleanup()
 	DelayedClearReplaceTransaction.Cancel();
 	DelayedDetectGraphChanges.Cancel();
 
-	if (CachingNotification.IsValid())
-	{
-		CachingNotification.Pin()->ExpireAndFadeout();
-	}
-
-	if (SizeTimeoutNotification.IsValid())
-	{
-		SizeTimeoutNotification.Pin()->ExpireAndFadeout();
-	}
+	CancelActiveFormatting();
 }
 
 void FBAGraphHandler::OnSelectionChanged(UEdGraphNode* PreviousNode, UEdGraphNode* NewNode)
@@ -271,13 +253,35 @@ void FBAGraphHandler::OnSelectionChanged(UEdGraphNode* PreviousNode, UEdGraphNod
 	}
 }
 
-void FBAGraphHandler::LinkExecWhenCreatedFromParameter(UEdGraphNode* NodeCreated)
+void FBAGraphHandler::TryInsertNewNode(UEdGraphNode* NewNode)
 {
-	if (!UBASettings_EditorFeatures::Get().bConnectExecutionWhenDraggingOffParameter)
+	const bool bInsertKeyDown = FBAInputProcessor::Get().IsInputChordDown(UBASettings_EditorFeatures::Get().InsertNewNodeKeyChord);
+	const auto& BASettings = UBASettings_EditorFeatures::Get();
+	if (FBAUtils::IsNodeImpure(NewNode))
 	{
-		return;
+		if (bInsertKeyDown != BASettings.bAlwaysConnectExecutionFromParameter)
+		{
+			if (LinkExecWhenCreatedFromParameter(NewNode, true))
+			{
+				return;
+			}
+		}
+		if (bInsertKeyDown != BASettings.bAlwaysInsertFromExecution)
+		{
+			AutoInsertExecNode(NewNode);
+		}
 	}
+	else if (FBAUtils::IsNodePure(NewNode))
+	{
+		if (bInsertKeyDown != BASettings.bAlwaysInsertFromParameter)
+		{
+			AutoInsertParameterNode(NewNode);
+		}
+	}
+}
 
+bool FBAGraphHandler::LinkExecWhenCreatedFromParameter(UEdGraphNode* NodeCreated, bool bInsert)
+{
 	TArray<UEdGraphPin*> LinkedPins = FBAUtils::GetLinkedPins(NodeCreated);
 
 	// if we drag off a parameter pin, link the exec pin too (if it exists)
@@ -316,6 +320,12 @@ void FBAGraphHandler::LinkExecWhenCreatedFromParameter(UEdGraphNode* NodeCreated
 						UEdGraphPin* OtherExecPin = OtherExecPins[0];
 						if (OtherExecPin->LinkedTo.Num() > 0)
 						{
+							// if we aren't inserting and the exec pin has links, then don't do anything
+							if (!bInsert)
+							{
+								return false;
+							}
+
 							TArray<UEdGraphPin*> MyPinsInDirection = FBAUtils::GetExecPins(NodeCreated, OtherExecPin->Direction);
 							if (MyPinsInDirection.Num() > 0)
 							{
@@ -324,21 +334,18 @@ void FBAGraphHandler::LinkExecWhenCreatedFromParameter(UEdGraphNode* NodeCreated
 						}
 
 						FBAUtils::TryCreateConnection(ExecPins[0], OtherExecPin, EBABreakMethod::Always);
-						return;
+						return true;
 					}
 				}
 			}
 		}
 	}
+
+	return false;
 }
 
 void FBAGraphHandler::AutoInsertExecNode(UEdGraphNode* NodeCreated)
 {
-	if (!UBASettings_EditorFeatures::Get().bInsertNewExecutionNodes)
-	{
-		return;
-	}
-
 	if (GetSelectedPin() == nullptr)
 	{
 		return;
@@ -381,11 +388,6 @@ void FBAGraphHandler::AutoInsertExecNode(UEdGraphNode* NodeCreated)
 
 void FBAGraphHandler::AutoInsertParameterNode(UEdGraphNode* NodeCreated)
 {
-	if (!UBASettings_EditorFeatures::Get().bInsertNewPureNodes)
-	{
-		return;
-	}
-
 	// if we drag off a pin creating node C in a chain A->B
 	// this code makes it so we create A->C->B (by default it create A->B | A->C)
 	TArray<UEdGraphPin*> LinkedParameterPins = FBAUtils::GetLinkedPins(NodeCreated).FilterByPredicate(FBAUtils::IsParameterPin);
@@ -562,8 +564,25 @@ bool FBAGraphHandler::IsWindowActive()
 
 bool FBAGraphHandler::IsGraphPanelFocused()
 {
-	TSharedPtr<SGraphPanel> Panel = GetGraphPanel();
-	return Panel.IsValid() ? Panel->HasAnyUserFocus().IsSet() : false;
+	if (TSharedPtr<SGraphPanel> Panel = GetGraphPanel())
+	{
+		if (Panel->HasAnyUserFocus().IsSet())
+		{
+			return true;
+		}
+
+		// check if the focused widget is a child of the graph panel
+		if (TSharedPtr<SWidget> FocusedWidget = FSlateApplication::Get().GetUserFocusedWidget(0))
+		{
+			TSharedPtr<SWidget> FoundGraphPanel = FBAUtils::ScanParentContainersForTypes(FocusedWidget, { "SGraphPanel" }, "SDockingTabStack");
+			if (FoundGraphPanel == Panel)
+			{
+				return true;
+			}
+		}
+	}
+
+	return false;
 }
 
 bool FBAGraphHandler::IsGraphReadOnly()
@@ -866,19 +885,11 @@ void FBAGraphHandler::OnNodesAdded(const TArray<UEdGraphNode*>& NewNodes)
 
 		ReplaceSavedSelectedNode(SingleNewNode);
 
-		// TODO: Test this logic on non-blueprint graphs
+		TryInsertNewNode(SingleNewNode);
+
+		// TODO: which non-blueprint graphs even have parent nodes...?
 		if (FBAUtils::IsBlueprintGraph(GetFocusedEdGraph()))
 		{
-			if (FBAUtils::IsNodeImpure(SingleNewNode))
-			{
-				LinkExecWhenCreatedFromParameter(SingleNewNode);
-				AutoInsertExecNode(SingleNewNode);
-			}
-			else if (FBAUtils::IsNodePure(SingleNewNode))
-			{
-				AutoInsertParameterNode(SingleNewNode);
-			}
-
 			AutoAddParentNode(SingleNewNode);
 		}
 
@@ -1079,11 +1090,16 @@ void FBAGraphHandler::AutoAddParentNode(UEdGraphNode* NewNode)
 		return;
 	}
 
+	UEdGraphSchema_K2* Schema = Cast<UEdGraphSchema_K2>(GetFocusedEdGraph()->Schema);
+	if (!Schema)
+	{
+		return;
+	}
+
 	// See FBlueprintEditor::OnAddParentNode
 	FFunctionFromNodeHelper FunctionFromNode(NewNode);
 	if (FunctionFromNode.Function && FunctionFromNode.Node)
 	{
-		UEdGraphSchema_K2* Schema = Cast<UEdGraphSchema_K2>(GetFocusedEdGraph()->Schema);
 		UFunction* ValidParent = Schema->GetCallableParentFunction(FunctionFromNode.Function);
 		UEdGraph* TargetGraph = FunctionFromNode.Node->GetGraph();
 		if (ValidParent && TargetGraph)
@@ -1150,65 +1166,6 @@ void FBAGraphHandler::AutoAddParentNode(UEdGraphNode* NewNode)
 	}
 }
 
-void FBAGraphHandler::ShowCachingNotification()
-{
-	if (CachingNotification.IsValid())
-	{
-		return;
-	}
-
-	FNotificationInfo Info(FText::GetEmpty());
-	Info.ExpireDuration = 0.0f;
-	Info.FadeInDuration = 0.0f;
-	Info.FadeOutDuration = 0.5f;
-	Info.bUseSuccessFailIcons = true;
-	Info.bUseThrobber = true;
-	Info.bFireAndForget = false;
-#if ENGINE_MAJOR_VERSION >= 5
-	Info.ForWindow = GetWindow();
-#endif
-	Info.ButtonDetails.Add(FNotificationButtonInfo(
-		FText::FromString(TEXT("Cancel")),
-		FText(),
-		FSimpleDelegate::CreateRaw(this, &FBAGraphHandler::CancelCachingNotification),
-		SNotificationItem::CS_Pending
-	));
-
-	CachingNotification = FSlateNotificationManager::Get().AddNotification(Info);
-	CachingNotification.Pin()->SetCompletionState(SNotificationItem::CS_Pending);
-	CachingNotification.Pin()->SetExpireDuration(0.0f);
-	CachingNotification.Pin()->SetFadeOutDuration(0.5f);
-
-	CachingNotification.Pin()->SetText(
-		TAttribute<FText>::Create(TAttribute<FText>::FGetter::CreateRaw(this, &FBAGraphHandler::GetCachingMessage))
-	);
-}
-
-void FBAGraphHandler::CancelCachingNotification()
-{
-	if (CachingNotification.IsValid())
-	{
-		CachingNotification.Pin()->SetText(FText::FromString("Cancelled caching node size"));
-		CachingNotification.Pin()->SetExpireDuration(0.5f);
-		CachingNotification.Pin()->SetFadeOutDuration(0.5f);
-		CachingNotification.Pin()->ExpireAndFadeout();
-		CachingNotification.Pin()->SetCompletionState(SNotificationItem::CS_Fail);
-	}
-
-	CancelProcessingNodeSizes();
-}
-
-void FBAGraphHandler::CancelFormattingNodes()
-{
-	PendingFormatting.Reset();
-	PendingTransaction.Reset();
-}
-
-FText FBAGraphHandler::GetCachingMessage() const
-{
-	return FText::FromString(FString::Printf(TEXT("Caching nodes (%d)"), PendingSize.Num()));
-}
-
 void FBAGraphHandler::ShowSizeTimeoutNotification()
 {
 	if (SizeTimeoutNotification.IsValid())
@@ -1237,7 +1194,7 @@ void FBAGraphHandler::ShowSizeTimeoutNotification()
 	Info.ButtonDetails.Add(FNotificationButtonInfo(
 		FText::FromString(TEXT("Use inaccurate node size")),
 		FText(),
-		FSimpleDelegate::CreateRaw(this, &FBAGraphHandler::CancelSizeTimeoutNotification),
+		FSimpleDelegate::CreateRaw(this, &FBAGraphHandler::CancelSizeTimeoutNotification, true),
 		SNotificationItem::CS_Pending
 	));
 
@@ -1249,7 +1206,7 @@ void FBAGraphHandler::ShowSizeTimeoutNotification()
 	);
 }
 
-void FBAGraphHandler::CancelSizeTimeoutNotification()
+void FBAGraphHandler::CancelSizeTimeoutNotification(bool bSaveFocusedNodeSize)
 {
 	if (SizeTimeoutNotification.IsValid())
 	{
@@ -1267,9 +1224,13 @@ void FBAGraphHandler::CancelSizeTimeoutNotification()
 
 	if (FocusedNode)
 	{
-		// try cache node size but it will be inaccurate
-		PendingSize.RemoveSwap(FocusedNode);
-		CacheNodeSize(FocusedNode);
+		if (bSaveFocusedNodeSize)
+		{
+			// try cache node size but it will be inaccurate
+			PendingSize.RemoveSwap(FocusedNode);
+			CacheNodeSize(FocusedNode);
+		}
+
 		FocusedNode = nullptr;
 	}
 }
@@ -1431,14 +1392,7 @@ void FBAGraphHandler::OnBeginNodeCaching()
 
 void FBAGraphHandler::OnEndNodeCaching()
 {
-	if (CachingNotification.IsValid())
-	{
-		CachingNotification.Pin()->SetCompletionState(SNotificationItem::CS_Success);
-		CachingNotification.Pin()->ExpireAndFadeout();
-	}
-
 	InitialPendingSize = 0;
-
 	DelayedCacheSizeFinished.StartDelay(2);
 }
 
@@ -1697,7 +1651,7 @@ void FBAGraphHandler::PreFormatting()
 	}
 }
 
-void FBAGraphHandler::PostFormatting(TArray<TSharedPtr<FFormatterInterface>> Formatters)
+void FBAGraphHandler::PostFormatting(const TArray<TSharedPtr<FFormatterInterface>>& Formatters)
 {
 	if (ZoomToTargetPostFormatting.IsValid())
 	{
@@ -1705,6 +1659,13 @@ void FBAGraphHandler::PostFormatting(TArray<TSharedPtr<FFormatterInterface>> For
 		ZoomToTargetPostFormatting = nullptr;
 	}
 
+	PostFormatComments(Formatters);
+
+	FormatterParameters.Reset();
+}
+
+void FBAGraphHandler::PostFormatComments(const TArray<TSharedPtr<FFormatterInterface>>& Formatters)
+{
 	if (!FormatterParameters.MasterContainsGraph)
 	{
 		return;
@@ -1792,8 +1753,6 @@ void FBAGraphHandler::PostFormatting(TArray<TSharedPtr<FFormatterInterface>> For
 			GEditor->GetTimerManager()->SetTimerForNextTick(FTimerDelegate::CreateLambda(UpdateGraphPanel, GraphPanel));
 		}
 	}
-
-	FormatterParameters.Reset();
 }
 
 bool FBAGraphHandler::FilterSelectiveFormatting(UEdGraphNode* Node, const TArray<UEdGraphNode*>& NodesToFormat)
@@ -2270,6 +2229,17 @@ void FBAGraphHandler::UpdateCachedNodeSize(float DeltaTime)
 	{
 		OnBeginNodeCaching();
 
+		// sort top left most node
+		PendingSize.Sort([](const UEdGraphNode& NodeA, const UEdGraphNode& NodeB)
+		{
+			if (NodeA.NodePosX == NodeB.NodePosX)
+			{
+				return NodeA.NodePosY <= NodeB.NodePosY;
+			}
+
+			return NodeA.NodePosX <= NodeB.NodePosX;
+		});
+
 		GraphEditor->GetViewLocation(ViewCache, ZoomCache);
 		bFullyZoomed = true;
 	}
@@ -2320,7 +2290,7 @@ void FBAGraphHandler::UpdateCachedNodeSize(float DeltaTime)
 
 					if (SizeTimeoutNotification.IsValid())
 					{
-						CancelSizeTimeoutNotification();
+						CancelSizeTimeoutNotification(true);
 					}
 				}
 			}
@@ -2552,6 +2522,8 @@ void FBAGraphHandler::SimpleFormatAll()
 
 			Node->Modify();
 
+			// ignore previously formatted nodes, these can be overlapping if they are shared parameter nodes
+			FormatterParameters.IgnoredNodes = FormattedNodes.Array();
 			TSharedPtr<FFormatterInterface> Formatter = FormatNodes(Node, true);
 
 			if (!Formatter.IsValid())
@@ -3129,17 +3101,6 @@ float FBAGraphHandler::GetPendingNodeSizeProgress() const
 	return 0.0f;
 }
 
-void FBAGraphHandler::ClearCache()
-{
-	PendingSize.Reset();
-	PendingFormatting.Reset();
-	DelayedViewportZoomIn.Cancel();
-	DelayedCacheSizeTimeout.Cancel();
-	FocusedNode = nullptr;
-	bFullyZoomed = false;
-	CachedGraphEditor.Pin()->SetViewLocation(ViewCache, ZoomCache);
-}
-
 void FBAGraphHandler::ClearFormatters()
 {
 	FormatterMap.Empty();
@@ -3234,10 +3195,13 @@ TSharedPtr<FFormatterInterface> FBAGraphHandler::FormatNodes(UEdGraphNode* Node,
 	return Formatter;
 }
 
-void FBAGraphHandler::CancelProcessingNodeSizes()
+void FBAGraphHandler::CancelActiveFormatting()
 {
 	PendingSize.Reset();
 	PendingFormatting.Reset();
+	ResetTransactions();
+
+	CancelSizeTimeoutNotification(false);
 
 	if (bFullyZoomed)
 	{
@@ -3250,8 +3214,6 @@ void FBAGraphHandler::CancelProcessingNodeSizes()
 	{
 		GraphOverlay->SizeProgressWidget->HideOverlay();
 	}
-
-	ResetTransactions();
 }
 
 

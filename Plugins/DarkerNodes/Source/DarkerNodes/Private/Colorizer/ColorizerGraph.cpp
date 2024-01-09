@@ -5,11 +5,7 @@
 #include "Colorizer.h"
 #include "GraphEditorSettings.h"
 #include "Materials/MaterialInstanceDynamic.h"
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 1
-#include "UnrealEd/Classes/Settings/EditorStyleSettings.h"
-#else
-#include "Classes/EditorStyleSettings.h"
-#endif
+#include "Settings/EditorStyleSettings.h"
 
 void FColorizer::ColorGraph()
 {

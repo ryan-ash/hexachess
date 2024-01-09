@@ -32,6 +32,11 @@ void SBlueprintAssistGraphOverlay::Construct(const FArguments& InArgs, TSharedPt
 
 int32 SBlueprintAssistGraphOverlay::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect, FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const
 {
+	if (!SizeProgressWidget->IsSnapshotValid())
+	{
+		SizeProgressWidget->HideOverlay();
+	}
+
 	const int32 OutgoingLayer = SOverlay::OnPaint(Args, AllottedGeometry, MyCullingRect, OutDrawElements, LayerId, InWidgetStyle, bParentEnabled);
 
 	// don't paint anything when the size progress is visible
@@ -451,6 +456,9 @@ void SBlueprintAssistGraphOverlay::DrawDebugPinLink(const FString& DebugChannel,
 			FBAUtils::GetPinPos(OwnerGraphHandler, PinLink.To),
 			Color,
 			Duration);
+
+		FSlateRect Bounds = FBAUtils::GetPinBounds(OwnerGraphHandler->GetGraphPanel(), PinLink.To);
+		DrawBounds(Bounds, Color, Duration);
 	}
 }
 

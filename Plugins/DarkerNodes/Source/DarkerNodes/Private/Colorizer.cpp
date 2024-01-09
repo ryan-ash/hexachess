@@ -4,16 +4,12 @@
 
 #include "Colorizer.h"
 #include "Interfaces/IPluginManager.h"
-#include "SettingsEditor/Public/ISettingsEditorModule.h"
+#include "ISettingsEditorModule.h"
 #include "NiagaraEditorStyle.h"
 #include "Popup/DNUpdatePopup.h"
 #include "Styling/StyleColors.h"
 #include "Runtime/Launch/Resources/Version.h"
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 1
-#include "UnrealEd/Classes/Settings/EditorStyleSettings.h"
-#else
-#include "Classes/EditorStyleSettings.h"
-#endif
+#include "Settings/EditorStyleSettings.h"
 
 FColorizer::FColorizer()
 {
