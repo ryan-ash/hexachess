@@ -13,7 +13,8 @@ public class Onlooker : ModuleRules
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"Core"
+				"Core",
+				"SettingsEditor"
 			}
 		);
 

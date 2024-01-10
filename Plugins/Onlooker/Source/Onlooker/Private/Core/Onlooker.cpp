@@ -1,7 +1,7 @@
 #include "Core/Onlooker.h"
 
 #include <Interfaces/IPluginManager.h>
-#include <SettingsEditor/Public/ISettingsEditorModule.h>
+#include <ISettingsEditorModule.h>
 
 #define LOCTEXT_NAMESPACE "FOnlookerModule"
 
