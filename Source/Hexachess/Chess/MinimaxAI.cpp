@@ -15,10 +15,13 @@ void UMinimaxAIComponent::StartCalculatingMove(Board* ActiveBoard, bool IsWhiteA
 {
     const auto CompleteCallback = [this](TArray<FIntPoint>& Result)
     {
-        if (ChessGod.IsValid())
+        AsyncTask(ENamedThreads::GameThread, [this, Result]
         {
-            ChessGod->OnAIFinishedCalculatingMove.Broadcast(Result[0], Result[1]);
-        }
+            if (ChessGod.IsValid())
+            {
+                ChessGod->OnAIFinishedCalculatingMove.Broadcast(Result[0], Result[1]);
+            }
+        });
     };
 
     AsyncTask(ENamedThreads::AnyThread, [this, ActiveBoard, IsWhiteAI, CompleteCallback, Depth]
